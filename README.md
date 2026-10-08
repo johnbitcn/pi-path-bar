@@ -1,4 +1,4 @@
-# pi-show-dir
+# pi-path-bar
 
 Pi 底栏扩展。默认使用简短路径。支持设置菜单和任意文件夹的显示别名。
 
@@ -119,11 +119,13 @@ Git 查询异步执行，不阻塞渲染。每 5 秒刷新，也在工具执行�
 
 ## 配置文件
 
-配置保存到 Pi agent 目录中的 `pi-show-dir.json`。默认路径：
+配置保存到 Pi agent 目录中的 `pi-path-bar.json`。默认路径：
 
 ```text
-~/.pi/agent/pi-show-dir.json
+~/.pi/agent/pi-path-bar.json
 ```
+
+如果新配置文件不存在，会读取旧文件 `pi-show-dir.json`。下次保存时写入新文件，旧文件不删除。
 
 若设置了 `PI_CODING_AGENT_DIR`，则使用该目录。扩展不会设置或修改此环境变量。
 

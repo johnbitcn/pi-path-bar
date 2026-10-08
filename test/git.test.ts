@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { gitColor, gitText, parseStatus, readGit, readOperation, watchGit, type ReadyGit, type GitState } from "../src/git.ts";
 
 function temporary(t: { after: (fn: () => void) => void }) {
-  const dir = mkdtempSync(join(tmpdir(), "pi-show-dir-git-"));
+  const dir = mkdtempSync(join(tmpdir(), "pi-path-bar-git-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }

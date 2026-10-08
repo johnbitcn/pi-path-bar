@@ -9,7 +9,7 @@ import { openSettings } from "../src/settings.ts";
 initTheme("dark", false);
 
 test("settings menu adds, edits and deletes an arbitrary folder alias", async (t) => {
-  const dir = mkdtempSync(join(tmpdir(), "pi-show-dir-menu-"));
+  const dir = mkdtempSync(join(tmpdir(), "pi-path-bar-menu-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const folder = join(dir, "arbitrary"); mkdirSync(folder);
   const store = new ConfigStore(join(dir, "config.json"));
@@ -48,7 +48,7 @@ test("settings menu adds, edits and deletes an arbitrary folder alias", async (t
 
 for (const input of ["", "   ", undefined]) {
   test(`add alias uses current folder for blank input; Esc cancels (${JSON.stringify(input)})`, async (t) => {
-    const dir = mkdtempSync(join(tmpdir(), "pi-show-dir-current-"));
+    const dir = mkdtempSync(join(tmpdir(), "pi-path-bar-current-"));
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const store = new ConfigStore(join(dir, "config.json"));
     let config = store.load();

@@ -69,12 +69,15 @@ export function validateConfig(value: unknown): Config {
 
 export class ConfigStore {
   readonly file: string;
-  constructor(file: string) { this.file = file; }
+  readonly legacyFile?: string;
+  constructor(file: string, legacyFile?: string) { this.file = file; this.legacyFile = legacyFile; }
   load(): Config {
     let text: string;
     try { text = readFileSync(this.file, "utf8"); }
     catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return defaults();
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return this.legacyFile ? new ConfigStore(this.legacyFile).load() : defaults();
+      }
       throw error;
     }
     return validateConfig(JSON.parse(text));

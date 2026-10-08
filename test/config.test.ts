@@ -7,7 +7,7 @@ import { ConfigStore, aliasName, defaults, folderPath, setAlias, validateConfig 
 import { displayPath, formatPath } from "../src/path.ts";
 
 function temporary(t: { after: (fn: () => void) => void }) {
-  const dir = mkdtempSync(join(tmpdir(), "pi-show-dir-"));
+  const dir = mkdtempSync(join(tmpdir(), "pi-path-bar-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }

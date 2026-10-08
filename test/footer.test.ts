@@ -9,7 +9,7 @@ import { initTheme } from "@earendil-works/pi-coding-agent";
 initTheme("dark", false);
 
 test("footer preserves statuses, usage and supports restore", async (t) => {
-  const dir = mkdtempSync(join(tmpdir(), "pi-show-dir-footer-"));
+  const dir = mkdtempSync(join(tmpdir(), "pi-path-bar-footer-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   let start: any;
   let command: any;

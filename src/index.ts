@@ -10,8 +10,8 @@ import { directoryLine, resolveDisplayPath } from "./path.ts";
 
 const tokens = (n: number) => n < 1000 ? String(n) : n < 1e6 ? `${(n / 1000).toFixed(1)}k` : `${(n / 1e6).toFixed(1)}M`;
 
-export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-show-dir.json")) {
-  const store = new ConfigStore(configFile);
+export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-path-bar.json")) {
+  const store = new ConfigStore(configFile, configFile === join(getAgentDir(), "pi-path-bar.json") ? join(getAgentDir(), "pi-show-dir.json") : undefined);
   let config = defaults();
   const load = (ctx: ExtensionContext) => {
     try { config = store.load(); }
