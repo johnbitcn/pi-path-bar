@@ -21,7 +21,15 @@ Pi 底栏扩展。支持简短路径、目录别名和随主题调整的 Git 状
 
 ## 安装
 
-从 GitHub 安装：
+首次发布到 npm 后，可以从 npm 安装：
+
+```sh
+pi install npm:pi-path-bar
+# 或仅在本次启动中使用：
+pi -e npm:pi-path-bar
+```
+
+首次发布前，或需要使用 Git 来源时，从 GitHub 安装：
 
 ```sh
 pi install git:github.com/johnbitcn/pi-path-bar
@@ -170,5 +178,11 @@ Short 和 Auto 在宽度不足时将中间目录折叠为 `…`。极窄时，�
 ```sh
 npm install --ignore-scripts
 npm test
-npx tsc
+npm run check
 ```
+
+## 许可证与致谢
+
+本项目采用 [MIT 许可证](LICENSE)。Pi 和 Tide 的版权及许可文本见[第三方声明](THIRD_PARTY_NOTICES.md)。发布包不包含宿主依赖或字体文件。
+
+维护者可参阅 [npm 发布指南](https://github.com/johnbitcn/pi-path-bar/blob/main/RELEASING.md)，了解登录、打包检查、发布和验证流程。

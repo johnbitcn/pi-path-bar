@@ -21,7 +21,15 @@ A Pi extension for compact directory paths, folder aliases, and theme-aware Git 
 
 ## Installation
 
-Install from GitHub:
+After the first npm release, install from npm:
+
+```sh
+pi install npm:pi-path-bar
+# Or try it for one run:
+pi -e npm:pi-path-bar
+```
+
+Before that release, or to use the Git source, install from GitHub:
 
 ```sh
 pi install git:github.com/johnbitcn/pi-path-bar
@@ -170,5 +178,11 @@ Requires Node.js 22.19 or newer and Git for Git status and integration tests.
 ```sh
 npm install --ignore-scripts
 npm test
-npx tsc
+npm run check
 ```
+
+## License and acknowledgments
+
+[MIT](LICENSE). See [Third-party notices](THIRD_PARTY_NOTICES.md) for Pi and Tide copyright and license texts. Host packages and font files are not bundled.
+
+Maintainers: see the [npm release guide](https://github.com/johnbitcn/pi-path-bar/blob/main/RELEASING.md) for authentication, packaging checks, publishing, and verification.

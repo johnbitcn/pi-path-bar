@@ -2,9 +2,37 @@
   "name": "pi-path-bar",
   "version": "0.1.0",
   "type": "module",
-  "private": true,
+  "description": "A Pi extension for compact paths, folder aliases, and theme-aware Git status",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnbitcn/pi-path-bar.git"
+  },
+  "homepage": "https://github.com/johnbitcn/pi-path-bar#readme",
+  "bugs": {
+    "url": "https://github.com/johnbitcn/pi-path-bar/issues"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
   "keywords": [
-    "pi-package"
+    "pi-package",
+    "pi-extension",
+    "terminal",
+    "git",
+    "path",
+    "footer"
   ],
   "pi": {
     "extensions": [
@@ -12,7 +40,9 @@
     ]
   },
   "scripts": {
-    "test": "node --experimental-strip-types --test test/*.test.ts"
+    "check": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "prepublishOnly": "npm run check && npm test"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
