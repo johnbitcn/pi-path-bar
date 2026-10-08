@@ -24,7 +24,7 @@ export async function openSettings(ctx: ExtensionContext, get: () => Config, sav
       const config = get();
       const items: SettingItem[] = [
         { id: "mode", label: "路径显示", currentValue: modes[config.mode], values: Object.values(modes), description: "简短：始终缩写。自动：宽度不足才缩写。完整：不缩写。" },
-        ...([ ["icon", "目录图标"], ["branch", "Git 分支"], ["session", "会话名称"] ] as const).map(([id, label]) => ({ id, label, currentValue: config[id] ? "开启" : "关闭", values: switches })),
+        ...([ ["icon", "目录图标"], ["branch", "Git 状态"], ["session", "会话名称"] ] as const).map(([id, label]) => ({ id, label, currentValue: config[id] ? "开启" : "关闭", values: switches })),
         { id: "add", label: "添加目录别名", currentValue: "打开", values: ["打开"], description: "给任意文件夹命名。路径留空使用当前目录，只改变底栏显示。" },
         { id: "manage", label: "管理目录别名", currentValue: `${config.aliases.length} 项`, values: ["打开"], description: "修改路径、名称，或删除别名。" },
       ];

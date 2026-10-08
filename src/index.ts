@@ -3,9 +3,10 @@ import { join } from "node:path";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { ConfigStore, defaults, type Config } from "./config.ts";
 import { openSettings } from "./settings.ts";
+import { gitColor, gitText, watchGit } from "./git.ts";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import { directoryLine, displayPath } from "./path.ts";
+import { directoryLine, resolveDisplayPath } from "./path.ts";
 
 const tokens = (n: number) => n < 1000 ? String(n) : n < 1e6 ? `${(n / 1000).toFixed(1)}k` : `${(n / 1e6).toFixed(1)}M`;
 
@@ -16,20 +17,36 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
     try { config = store.load(); }
     catch (error) { ctx.ui.notify(`无法读取 ${store.file}：${error instanceof Error ? error.message : String(error)}。不会覆盖该文件。`, "error"); }
   };
+  let activeGit: ReturnType<typeof watchGit> | undefined;
   const install = (ctx: ExtensionContext) => {
+    activeGit?.dispose();
+    activeGit = undefined;
     if (ctx.mode !== "tui") return;
     if (config.mode === "native") { ctx.ui.setFooter(undefined); return; }
     ctx.ui.setFooter((tui, theme, data) => {
-      const unsubscribe = data.onBranchChange(() => tui.requestRender());
+      const monitor = config.branch ? watchGit(ctx.sessionManager.getCwd(), () => tui.requestRender()) : undefined;
+      activeGit = monitor;
+      const unsubscribe = data.onBranchChange(() => { monitor?.refresh(); tui.requestRender(); });
       return {
-        dispose: unsubscribe,
+        dispose() { unsubscribe(); monitor?.dispose(); if (activeGit === monitor) activeGit = undefined; },
         invalidate() {},
         render(width: number): string[] {
-          const branch = config.branch ? data.getGitBranch() : undefined;
+          const state = monitor?.value ?? { kind: "none" as const };
+          const git = config.branch ? gitText(state, data.getGitBranch() ?? undefined) : "";
+          const gitSuffix = git ? ` (${git})` : "";
           const name = config.session ? ctx.sessionManager.getSessionName() : undefined;
-          const suffix = `${branch ? ` (${branch})` : ""}${name ? ` • ${name}` : ""}`;
-          const path = displayPath(ctx.sessionManager.getCwd(), homedir(), config.aliases);
-          const lines = [theme.fg("dim", directoryLine(path, suffix, width, { mode: config.mode === "native" ? "short" : config.mode, icon: config.icon }))];
+          const suffix = `${gitSuffix}${name ? ` • ${name}` : ""}`;
+          const display = resolveDisplayPath(ctx.sessionManager.getCwd(), homedir(), config.aliases);
+          const lines = [directoryLine(display.path, suffix, width, {
+            mode: config.mode === "native" ? "short" : config.mode,
+            icon: config.icon,
+            aliasName: display.aliasName,
+            style: {
+              normal: (text) => theme.fg("dim", text),
+              alias: (text) => theme.fg("mdLink", text),
+              suffix: (text) => theme.fg(gitColor(state), text.slice(0, gitSuffix.length)) + theme.fg("dim", text.slice(gitSuffix.length)),
+            },
+          })];
 
           const totals = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 };
           let hitRate: number | undefined;
@@ -83,6 +100,9 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
     });
   };
   pi.on("session_start", async (_event, ctx) => { load(ctx); install(ctx); });
+  pi.on("tool_result", () => { activeGit?.refresh(); });
+  pi.on("agent_end", () => { activeGit?.refresh(); });
+  pi.on("session_shutdown", () => { activeGit?.dispose(); activeGit = undefined; });
   pi.registerCommand("show-dir", {
     description: "目录显示设置与文件夹别名管理",
     handler: async (_args, ctx) => {

@@ -16,7 +16,7 @@ test("footer preserves statuses, usage and supports restore", async (t) => {
   let factory: any;
   let disposed = false;
   const pi: any = {
-    on: (_name: string, handler: any) => { start = handler; },
+    on: (name: string, handler: any) => { if (name === "session_start") start = handler; },
     registerCommand: (_name: string, value: any) => { command = value; },
     getThinkingLevel: () => "medium",
   };
@@ -50,7 +50,7 @@ test("footer preserves statuses, usage and supports restore", async (t) => {
     getExtensionStatuses: () => new Map([["usage", "5h:100% left"]]),
   });
   const lines = component.render(100);
-  assert.equal(lines[0], "/t/a (main) • session");
+  assert.equal(lines[0], "/t/a ( main ?) • session");
   assert.ok(lines[1].includes("$0.010 (sub)"));
   assert.ok(lines[1].includes("test-model • medium"));
   assert.equal(lines[2], "5h:100% left");
