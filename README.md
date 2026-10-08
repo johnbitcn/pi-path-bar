@@ -1,135 +1,145 @@
 # pi-path-bar
 
-Pi 底栏扩展。默认使用简短路径。支持设置菜单和任意文件夹的显示别名。
+English | [简体中文](README.zh-CN.md)
 
-## 安装
+A Pi extension for compact directory paths, folder aliases, and theme-aware Git status.
 
-在本项目目录执行：
+```text
+ ~/C/P/demo-app ( main)
+ Projects/demo-app ( main +2 !1 ?3)
+ demo ( main ⇡1)
+```
+
+## Features
+
+- Short, automatic, and full path display modes.
+- Display aliases for any folder, without changing actual paths or environment variables.
+- Theme-aware alias colors and Tide-style Git status indicators.
+- An interactive settings menu with persistent configuration.
+- Existing usage statistics, model information, and extension status lines.
+- Unicode folder names and aliases.
+
+## Installation
+
+Install from GitHub:
+
+```sh
+pi install git:github.com/johnbitcn/pi-path-bar
+```
+
+Run `/reload` in an existing Pi session, then open `/path-bar`.
+
+For a single Pi run:
+
+```sh
+pi -e git:github.com/johnbitcn/pi-path-bar
+```
+
+For local development, run from the project directory:
 
 ```sh
 pi install "$PWD"
-```
-
-在已运行的 Pi 中执行 `/reload`，再输入 `/show-dir` 打开设置菜单。
-
-临时试用：
-
-```sh
+# Or load the extension for one run:
 pi -e ./src/index.ts
 ```
 
-## 设置菜单
+Load only one copy of the extension. Remove an existing local or Git installation before switching sources. Folder icons require a Nerd Font; you can turn them off in settings.
 
-上下键选择，Enter 或空格切换设置、打开操作，Esc 退出。显示设置立即生效，自动保存。
+## Settings
 
-| 选项 | 默认值 | 可选值 |
+Run `/path-bar`. Use the arrow keys to select an item, Enter or Space to change a setting or open an action, and Esc to exit. Changes apply immediately and are saved automatically.
+
+| Setting | Default | Choices |
 | --- | --- | --- |
-| 路径显示 | 简短 | 简短、自动、完整、原生底栏 |
-| 目录图标 | 开启 | 开启、关闭 |
-| Git 状态 | 开启 | 开启、关闭 |
-| 会话名称 | 开启 | 开启、关闭 |
-| 添加目录别名 | — | 输入任意文件夹路径和显示名称 |
-| 管理目录别名 | — | 修改路径或名称、删除别名 |
+| Path display | Short | Short, Auto, Full, Native footer |
+| Folder icon | On | On, Off |
+| Git status | On | On, Off |
+| Session name | On | On, Off |
+| Add folder alias | — | Enter a folder path and a name |
+| Manage folder aliases | — | Edit or delete aliases |
 
-“原生底栏”恢复 Pi 默认底栏。此时其他显示选项不生效，但设置会保留。
+**Native footer** restores Pi's built-in footer. Other display settings are retained but do not apply in that mode.
 
-## 目录别名
+### Path modes
 
-“添加目录别名”不限于当前目录。输入绝对路径或 `~/` 开头的路径，再输入显示名称。路径留空直接按 Enter，则使用当前目录。路径必须存在且为文件夹。保存时会展开 `~`，并规范化为绝对路径。
+- **Short:** always abbreviate intermediate folders to their first grapheme, including Unicode names.
+- **Auto:** show the full path when it fits; otherwise abbreviate it.
+- **Full:** do not abbreviate; truncate the line if needed.
 
-例如，将以下目录命名为 `云盘`：
+Short and Auto collapse intermediate folders to `…` when necessary. At very small widths, the root and icon are dropped before the final folder name is truncated.
 
-```text
-~/CloudDrive
-```
+The home directory is shown as `~`. Named roots such as `~` and folder aliases receive a folder icon. Absolute paths starting with `/` do not.
 
-该目录及子目录的底栏显示为：
+## Folder aliases
 
-```text
- 云盘
- 云盘/P/demo-app
-```
+Choose **Add folder alias** to name any folder. Enter an absolute path or a path starting with `~/`. Leave the path blank and press Enter to use the current directory. The target must exist and be a directory.
 
-也可以将 `demo-app` 目录本身命名为 `示例`，显示为 ` 示例`。
-
-匹配规则：
-
-- 别名匹配该目录及其子目录，按目录边界匹配。
-- 多个别名同时匹配时，使用最长路径对应的别名。
-- 别名名称不缩写。其后的中间目录按显示模式处理。
-- 仅命中的别名名称使用 Pi 当前主题的链接色 `mdLink`。内置暗色主题为亮蓝色，亮色主题为深蓝色；自定义主题以其链接色为准。
-- 图标、子目录和分支保持灰色。切换主题后，别名颜色同步更新。
-- 无别名时，主目录使用 `~`，其他路径使用绝对路径。
-- 路径和名称不能重复。名称不能是 `~`、`.`、`..`，不能包含斜杠、反斜杠、换行或控制字符。
-- 修改时输入空内容表示保留原路径或原名称。Esc 取消。
-- 删除别名不会删除实际文件夹。
-
-匹配使用规范化后的路径，不解析符号链接。已有别名的文件夹暂时离线时，仍保留配置。
-
-## 路径显示
-
-- 简短：始终将中间目录缩写为首个字符，中文也取首个字符。
-- 自动：宽度足够时显示完整路径，宽度不足时缩写。
-- 完整：不缩写，超出宽度时截断。
-- 简短或自动模式下，宽度不足时将中间目录折叠为 `…`。
-- 极窄时，先省略起点与图标，再截断最后一级目录。
-- `~`、别名和其他非绝对路径前显示 ``。以 `/` 开头的绝对路径不显示图标。
+For example, name `~/CloudDrive` **Cloud**:
 
 ```text
- ~/C/P/demo-app
- ~/…/demo-app
+ Cloud
+ Cloud/P/demo-app
 ```
 
-图标需要 Nerd Font。扩展保留用量、模型、思考级别和其他扩展的状态行。
+You can also name `~/CloudDrive/Projects/demo-app` **demo**. Then that folder displays as ` demo`, and its child displays as ` demo/src`.
 
-## Git 状态
+### Matching and editing
 
-借用 Tide 的标记形式，但只使用 Pi 主题文字色，不使用背景色。不修改 fish 或 Tide。
+- An alias matches its folder and descendants, at directory boundaries.
+- If multiple aliases match, the longest path wins. Parent and child aliases are not combined.
+- The alias name remains intact when possible. Descendant folders follow the selected path mode.
+- Without a match, the extension uses `~` or an absolute path.
+- Paths are normalized and `~` is expanded on save. Symbolic links are not resolved.
+- Paths and names must be unique. Names cannot be empty, `~`, `.`, or `..`, or contain slashes, backslashes, newlines, or control characters.
+- When editing, leave a field blank to keep its existing value. Esc cancels.
+- Deleting an alias does not delete the folder. Stored aliases remain available when a drive is disconnected.
 
-| 状态 | 主题色 | 内置主题效果 |
+Only the matched alias name uses Pi's `mdLink` theme color: brighter blue in the built-in dark theme and darker blue in the light theme. Custom themes control their own link color. The icon, descendant path, and session name use gray; Git uses its status color. Colors follow theme changes.
+
+Aliases affect only the footer. They do not change the working directory, tool paths, or environment variables.
+
+## Git status
+
+Git indicators borrow Tide's notation, but use Pi theme text colors rather than background colors. The extension does not modify fish or Tide.
+
+| State | Theme token | Built-in appearance |
 | --- | --- | --- |
-| 初次读取或读取失败 | `text` | 默认文字色，显示 `?` |
-| 工作区干净 | `mdLink` | 蓝色 |
-| 有已暂存、未暂存或未跟踪变更 | `warning` | 黄色 |
-| 有冲突或正在进行 Git 操作 | `error` | 红色 |
+| Initial loading or query failure | `text` | Default text color, with `?` |
+| Clean working tree | `mdLink` | Blue |
+| Staged, unstaged, or untracked changes | `warning` | Yellow |
+| Conflicts or an active Git operation | `error` | Red |
 
-优先级：红色 > 黄色 > 蓝色。不在 Git 仓库时隐藏 Git 信息。自定义主题以其对应颜色为准。目录别名的颜色不受 Git 状态影响。
-
-示例：
+Red takes priority over yellow, then blue. Outside a Git repository, Git information is hidden. Alias color is independent of Git status.
 
 ```text
- 示例 ( main ⇣2 ⇡1 *1 ~2 +3 !4 ?5)
+ demo ( main ⇣2 ⇡1 *1 ~2 +3 !4 ?5)
 ```
 
-| 标记 | 含义 |
+| Indicator | Meaning |
 | --- | --- |
-| `⇣N` | 落后上游 N 个提交 |
-| `⇡N` | 领先上游 N 个提交 |
-| `*N` | N 条 stash |
-| `~N` | N 个冲突文件，覆盖 `DD AU UD UA DU AA UU` 全部类型 |
-| `+N` | N 个已暂存变更条目 |
-| `!N` | N 个未暂存变更条目 |
-| `?N` | N 个未跟踪条目 |
+| `⇣N` | N commits behind upstream |
+| `⇡N` | N commits ahead of upstream |
+| `*N` | N stash entries |
+| `~N` | N conflicted files; covers `DD AU UD UA DU AA UU` |
+| `+N` | N staged entries |
+| `!N` | N unstaged entries |
+| `?N` | N untracked entries |
 
-无对应状态时省略标记。未跟踪目录按 Git 默认行为合并为一个条目。冲突文件不重复计入已暂存或未暂存数量。领先、落后和 stash 本身不改变颜色。没有上游时不显示领先、落后。
+Zero counts are omitted. Untracked directories are grouped using Git's default behavior. Conflicts are not counted again as staged or unstaged changes. Ahead, behind, and stash counts alone do not change the color. Ahead and behind are omitted if no upstream exists.
 
-显示 `merge`、`rebase`、`cherry-pick`、`revert`、`bisect` 等操作名称。可用时显示 rebase 进度。分离 HEAD 时显示 `#标签` 或 `@提交短哈希`。支持 linked worktree。
+Active operations include merge, rebase, cherry-pick, revert, and bisect. Rebase progress is shown when available. Detached HEAD displays `#tag` or `@short-commit`. Linked worktrees are supported.
 
-Git 查询异步执行，不阻塞渲染。每 5 秒刷新，也在工具执行完成、agent 回复完成和分支变化时刷新。每次查询设有超时。关闭 Git 状态或恢复原生底栏后停止扩展查询。
+Queries run asynchronously with a timeout. Status refreshes every five seconds, after tool execution or an agent turn, and when the branch changes. Disabling Git status or selecting Native footer stops the extension's queries.
 
-## 配置文件
+## Configuration
 
-配置保存到 Pi agent 目录中的 `pi-path-bar.json`。默认路径：
+Settings are shared across projects and stored in:
 
 ```text
 ~/.pi/agent/pi-path-bar.json
 ```
 
-如果新配置文件不存在，会读取旧文件 `pi-show-dir.json`。下次保存时写入新文件，旧文件不删除。
-
-若设置了 `PI_CODING_AGENT_DIR`，则使用该目录。扩展不会设置或修改此环境变量。
-
-配置示例：
+If `PI_CODING_AGENT_DIR` is set, its directory is used instead. The extension never sets or changes that variable.
 
 ```json
 {
@@ -138,26 +148,24 @@ Git 查询异步执行，不阻塞渲染。每 5 秒刷新，也在工具执行�
   "branch": true,
   "session": true,
   "aliases": [
-    { "path": "/home/example/Projects", "name": "项目" }
+    { "path": "/home/example/Projects", "name": "Projects" }
   ]
 }
 ```
 
-配置是扩展级设置，各项目共用。重启或 `/reload` 后保留。打开菜单时重新读取磁盘配置；保存使用临时文件和原子替换。其他已运行的 Pi 实例需重新打开菜单或 `/reload` 才同步显示。
+The `branch` field controls Git status. Settings survive restarts and `/reload`. Opening the menu reloads the file. Saves use a temporary file and atomic replacement. Other running Pi instances must reopen the menu or reload to pick up changes.
 
-配置损坏时会提示错误，不会覆盖原文件。修复后重新打开菜单。
+If the new file is absent, the extension reads the legacy `pi-show-dir.json`. The next save writes the new file and leaves the old file intact. Invalid configuration is reported and is not overwritten.
 
-目录别名只改变显示，不改变工作目录、环境变量或工具访问路径。
+## Limitations
 
-## 限制
+- Pi's public API replaces the entire footer. If another extension also calls `setFooter()`, the last one wins.
+- The public API does not expose the auto-compaction setting, so the custom footer does not show the native `(auto)` marker.
+- This is an unofficial Pi extension. It is not affiliated with or endorsed by Pi or Tide.
 
-Pi 的公开 API 只支持替换整个底栏。此扩展使用 `setFooter()`，不修改 Pi 安装文件，不使用内部组件。
+## Development
 
-公开 API 未提供自动压缩开关，因此不显示原生底栏的 `(auto)` 标记。若其他扩展也调用 `setFooter()`，最后设置的底栏生效。
-
-## 开发
-
-需要 Node.js 22.19 或更新版本。
+Requires Node.js 22.19 or newer and Git for Git status and integration tests.
 
 ```sh
 npm install --ignore-scripts

@@ -16,7 +16,7 @@ test("settings menu adds, edits and deletes an arbitrary folder alias", async (t
   let config = store.load();
   const snapshots: any[] = [];
   const inputs = [folder, "任意目录", "", "新名称"];
-  const selects = ["任意目录 → " + folder, "修改路径或名称", "新名称 → " + folder, "删除别名"];
+  const selects = ["任意目录 → " + folder, "Edit path or name", "新名称 → " + folder, "Delete alias"];
   const keys = [
     ["\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\r"], // Add
     ["\x1b[B", "\r"], // Manage -> edit
@@ -27,7 +27,7 @@ test("settings menu adds, edits and deletes an arbitrary folder alias", async (t
   const ctx: any = { sessionManager: { getCwd: () => dir }, ui: {
     custom: (build: any) => new Promise((done) => {
       const component = build({ requestRender() {} }, { fg: (_color: string, text: string) => text, bold: (text: string) => text }, {}, done);
-      assert.ok(component.render(80).join("\n").includes("目录显示设置"));
+      assert.ok(component.render(80).join("\n").includes("Path bar settings"));
       for (const key of keys.shift()!) component.handleInput(key);
     }),
     input: async () => inputs.shift(),

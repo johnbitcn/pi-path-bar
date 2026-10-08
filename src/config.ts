@@ -17,48 +17,48 @@ export const defaults = (): Config => ({ mode: "short", icon: true, branch: true
 export function aliasName(value: string): string {
   const name = value.trim();
   if (!name || name === "~" || name === "." || name === ".." || /[/\\\x00-\x1f\x7f-\x9f]/u.test(value)) {
-    throw new Error("名称不能为空，也不能是 ~、.、.. 或包含斜杠、换行、控制字符。");
+    throw new Error("Enter a nonempty name other than '~', '.', or '..'. Do not use slashes, backslashes, newlines, or control characters.");
   }
   return name;
 }
 
 export function folderPath(value: string, home = homedir()): string {
   const input = value.trim();
-  if (!input || /[\x00-\x1f\x7f-\x9f]/u.test(input)) throw new Error("请输入有效的文件夹路径。");
+  if (!input || /[\x00-\x1f\x7f-\x9f]/u.test(input)) throw new Error("Enter a valid folder path.");
   const expanded = input === "~" ? home : input.startsWith("~/") ? join(home, input.slice(2)) : input;
-  if (!isAbsolute(expanded)) throw new Error("请使用绝对路径或 ~/ 开头的路径。");
+  if (!isAbsolute(expanded)) throw new Error("Use an absolute path or a path starting with ~/.");
   const path = resolve(expanded);
   try {
     if (!statSync(path).isDirectory()) throw new Error();
-  } catch { throw new Error("文件夹不存在，或该路径不是文件夹。"); }
+  } catch { throw new Error("The folder does not exist, or the path is not a directory."); }
   return path;
 }
 
 export function validateConfig(value: unknown): Config {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("配置必须是 JSON 对象。");
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("The configuration must be a JSON object.");
   const data = value as Record<string, unknown>;
   const config = defaults();
   if (data.mode !== undefined) {
-    if (!["short", "auto", "full", "native"].includes(data.mode as string)) throw new Error("路径显示模式无效。");
+    if (!["short", "auto", "full", "native"].includes(data.mode as string)) throw new Error("Invalid path display mode.");
     config.mode = data.mode as PathMode;
   }
   for (const key of ["icon", "branch", "session"] as const) {
     if (data[key] === undefined) continue;
-    if (typeof data[key] !== "boolean") throw new Error(`${key} 必须是布尔值。`);
+    if (typeof data[key] !== "boolean") throw new Error(`${key} must be a boolean.`);
     config[key] = data[key];
   }
   if (data.aliases !== undefined) {
-    if (!Array.isArray(data.aliases)) throw new Error("aliases 必须是数组。");
+    if (!Array.isArray(data.aliases)) throw new Error("aliases must be an array.");
     const paths = new Set<string>();
     const names = new Set<string>();
     config.aliases = data.aliases.map((item: unknown) => {
       const alias = item as FolderAlias | undefined;
       if (!alias || typeof alias.path !== "string" || !isAbsolute(alias.path) || /[\x00-\x1f\x7f-\x9f]/u.test(alias.path) || typeof alias.name !== "string") {
-        throw new Error("目录别名格式无效。");
+        throw new Error("Invalid folder alias format.");
       }
       const path = resolve(alias.path);
       const name = aliasName(alias.name);
-      if (paths.has(path) || names.has(name)) throw new Error("目录路径和别名名称不能重复。");
+      if (paths.has(path) || names.has(name)) throw new Error("Folder paths and alias names must be unique.");
       paths.add(path); names.add(name);
       // Do not stat stored paths: a disconnected drive should not invalidate all settings.
       return { path, name };
@@ -99,7 +99,7 @@ export class ConfigStore {
 
 export function setAlias(config: Config, alias: FolderAlias, previousPath?: string): void {
   if (config.aliases.some((item) => item.path !== previousPath && (item.path === alias.path || item.name === alias.name))) {
-    throw new Error("该路径或名称已有别名。请在“管理目录别名”中修改。");
+    throw new Error("This path or name already has an alias. Edit it in Manage folder aliases.");
   }
   config.aliases = config.aliases.filter((item) => item.path !== previousPath);
   config.aliases.push(alias);

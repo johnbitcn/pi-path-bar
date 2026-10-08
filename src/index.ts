@@ -15,7 +15,7 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
   let config = defaults();
   const load = (ctx: ExtensionContext) => {
     try { config = store.load(); }
-    catch (error) { ctx.ui.notify(`无法读取 ${store.file}：${error instanceof Error ? error.message : String(error)}。不会覆盖该文件。`, "error"); }
+    catch (error) { ctx.ui.notify(`Cannot read ${store.file}: ${error instanceof Error ? error.message : String(error)}. The file will not be overwritten.`, "error"); }
   };
   let activeGit: ReturnType<typeof watchGit> | undefined;
   const install = (ctx: ExtensionContext) => {
@@ -103,15 +103,15 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
   pi.on("tool_result", () => { activeGit?.refresh(); });
   pi.on("agent_end", () => { activeGit?.refresh(); });
   pi.on("session_shutdown", () => { activeGit?.dispose(); activeGit = undefined; });
-  pi.registerCommand("show-dir", {
-    description: "目录显示设置与文件夹别名管理",
+  pi.registerCommand("path-bar", {
+    description: "Configure the path bar and manage folder aliases",
     handler: async (_args, ctx) => {
-      if (ctx.mode !== "tui") { ctx.ui.notify("/show-dir 需要 TUI 模式", "error"); return; }
+      if (ctx.mode !== "tui") { ctx.ui.notify("/path-bar requires TUI mode", "error"); return; }
       load(ctx);
       install(ctx);
       const save = (change: (next: Config) => void) => {
         try { config = store.update(change); install(ctx); return true; }
-        catch (error) { ctx.ui.notify(`保存失败：${error instanceof Error ? error.message : String(error)}`, "error"); return false; }
+        catch (error) { ctx.ui.notify(`Could not save: ${error instanceof Error ? error.message : String(error)}`, "error"); return false; }
       };
       await openSettings(ctx, () => config, save);
     },

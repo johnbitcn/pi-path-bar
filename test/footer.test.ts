@@ -17,7 +17,7 @@ test("footer preserves statuses, usage and supports restore", async (t) => {
   let disposed = false;
   const pi: any = {
     on: (name: string, handler: any) => { if (name === "session_start") start = handler; },
-    registerCommand: (_name: string, value: any) => { command = value; },
+    registerCommand: (name: string, value: any) => { assert.equal(name, "path-bar"); command = value; },
     getThinkingLevel: () => "medium",
   };
   const ctx: any = {
