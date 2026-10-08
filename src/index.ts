@@ -1,0 +1,99 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { ConfigStore, defaults, type Config } from "./config.ts";
+import { openSettings } from "./settings.ts";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { directoryLine, displayPath } from "./path.ts";
+
+const tokens = (n: number) => n < 1000 ? String(n) : n < 1e6 ? `${(n / 1000).toFixed(1)}k` : `${(n / 1e6).toFixed(1)}M`;
+
+export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-show-dir.json")) {
+  const store = new ConfigStore(configFile);
+  let config = defaults();
+  const load = (ctx: ExtensionContext) => {
+    try { config = store.load(); }
+    catch (error) { ctx.ui.notify(`无法读取 ${store.file}：${error instanceof Error ? error.message : String(error)}。不会覆盖该文件。`, "error"); }
+  };
+  const install = (ctx: ExtensionContext) => {
+    if (ctx.mode !== "tui") return;
+    if (config.mode === "native") { ctx.ui.setFooter(undefined); return; }
+    ctx.ui.setFooter((tui, theme, data) => {
+      const unsubscribe = data.onBranchChange(() => tui.requestRender());
+      return {
+        dispose: unsubscribe,
+        invalidate() {},
+        render(width: number): string[] {
+          const branch = config.branch ? data.getGitBranch() : undefined;
+          const name = config.session ? ctx.sessionManager.getSessionName() : undefined;
+          const suffix = `${branch ? ` (${branch})` : ""}${name ? ` • ${name}` : ""}`;
+          const path = displayPath(ctx.sessionManager.getCwd(), homedir(), config.aliases);
+          const lines = [theme.fg("dim", directoryLine(path, suffix, width, { mode: config.mode === "native" ? "short" : config.mode, icon: config.icon }))];
+
+          const totals = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 };
+          let hitRate: number | undefined;
+          // Include usage before compaction and usage from tools and summaries.
+          for (const entry of ctx.sessionManager.getEntries()) {
+            const usage = entry.type === "message"
+              ? (entry.message.role === "assistant" || entry.message.role === "toolResult" ? entry.message.usage : undefined)
+              : (entry.type === "usage" || entry.type === "compaction" || entry.type === "branch_summary" ? entry.usage : undefined);
+            if (!usage) continue;
+            totals.input += usage.input ?? 0;
+            totals.output += usage.output ?? 0;
+            totals.cacheRead += usage.cacheRead ?? 0;
+            totals.cacheWrite += usage.cacheWrite ?? 0;
+            totals.cost += usage.cost?.total ?? 0;
+            if (entry.type === "message" && entry.message.role === "assistant") {
+              const prompt = usage.input + usage.cacheRead + usage.cacheWrite;
+              hitRate = prompt > 0 ? usage.cacheRead / prompt * 100 : undefined;
+            }
+          }
+          const stats: string[] = [];
+          for (const [key, prefix] of [["input", "↑"], ["output", "↓"], ["cacheRead", "R"], ["cacheWrite", "W"]] as const) {
+            if (totals[key]) stats.push(`${prefix}${tokens(totals[key])}`);
+          }
+          if ((totals.cacheRead || totals.cacheWrite) && hitRate !== undefined) stats.push(`CH${hitRate.toFixed(1)}%`);
+          const model = ctx.model;
+          const subscription = model && (model.provider === "kimi-coding" || ctx.modelRegistry.isUsingOAuth(model));
+          if (totals.cost || subscription) stats.push(`$${totals.cost.toFixed(3)}${subscription ? " (sub)" : ""}`);
+          const usage = ctx.getContextUsage();
+          const percent = usage?.percent;
+          const context = `${percent == null ? "?" : percent.toFixed(1) + "%"}/${tokens(usage?.contextWindow ?? model?.contextWindow ?? 0)}`;
+          stats.push(percent != null && percent > 70 ? theme.fg(percent > 90 ? "error" : "warning", context) : context);
+          const left = truncateToWidth(stats.join(" "), width, "…");
+          let right = model?.id ?? "no-model";
+          if (model?.reasoning) right += ` • ${pi.getThinkingLevel()}`;
+          if (model && data.getAvailableProviderCount() > 1) {
+            const provider = `(${model.provider}) ${right}`;
+            if (visibleWidth(left) + 2 + visibleWidth(provider) <= width) right = provider;
+          }
+          const available = width - visibleWidth(left) - 2;
+          right = available > 0 ? truncateToWidth(right, available, "…") : "";
+          const padding = right ? " ".repeat(Math.max(2, width - visibleWidth(left) - visibleWidth(right))) : "";
+          lines.push(theme.fg("dim", left) + theme.fg("dim", padding + right));
+          const statuses = [...data.getExtensionStatuses()].sort(([a], [b]) => a.localeCompare(b));
+          if (statuses.length) {
+            const text = statuses.map(([, value]) => value.replace(/[\r\n\t]/g, " ")).join(" ");
+            lines.push(truncateToWidth(text, width, "…"));
+          }
+          return lines;
+        },
+      };
+    });
+  };
+  pi.on("session_start", async (_event, ctx) => { load(ctx); install(ctx); });
+  pi.registerCommand("show-dir", {
+    description: "目录显示设置与文件夹别名管理",
+    handler: async (_args, ctx) => {
+      if (ctx.mode !== "tui") { ctx.ui.notify("/show-dir 需要 TUI 模式", "error"); return; }
+      load(ctx);
+      install(ctx);
+      const save = (change: (next: Config) => void) => {
+        try { config = store.update(change); install(ctx); return true; }
+        catch (error) { ctx.ui.notify(`保存失败：${error instanceof Error ? error.message : String(error)}`, "error"); return false; }
+      };
+      await openSettings(ctx, () => config, save);
+    },
+  });
+}
