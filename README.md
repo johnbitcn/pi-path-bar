@@ -40,17 +40,17 @@ pi -e ./src/index.ts
 例如，将以下目录命名为 `云盘`：
 
 ```text
-~/Library/CloudStorage/GoogleDrive-zz.john.cn@gmail.com/我的云端硬盘
+~/CloudDrive
 ```
 
 该目录及子目录的底栏显示为：
 
 ```text
  云盘
- 云盘/P/fabric-facet
+ 云盘/P/demo-app
 ```
 
-也可以将 `fabric-facet` 目录本身命名为 `facet`，显示为 ` facet`。
+也可以将 `demo-app` 目录本身命名为 `示例`，显示为 ` 示例`。
 
 匹配规则：
 
@@ -76,8 +76,8 @@ pi -e ./src/index.ts
 - `~`、别名和其他非绝对路径前显示 ``。以 `/` 开头的绝对路径不显示图标。
 
 ```text
- ~/L/C/G/我/P/fabric-facet
- ~/…/fabric-facet
+ ~/C/P/demo-app
+ ~/…/demo-app
 ```
 
 图标需要 Nerd Font。扩展保留用量、模型、思考级别和其他扩展的状态行。
@@ -98,7 +98,7 @@ pi -e ./src/index.ts
 示例：
 
 ```text
- facet ( main ⇣2 ⇡1 *1 ~2 +3 !4 ?5)
+ 示例 ( main ⇣2 ⇡1 *1 ~2 +3 !4 ?5)
 ```
 
 | 标记 | 含义 |
@@ -138,7 +138,7 @@ Git 查询异步执行，不阻塞渲染。每 5 秒刷新，也在工具执行�
   "branch": true,
   "session": true,
   "aliases": [
-    { "path": "/Users/john/Projects", "name": "项目" }
+    { "path": "/home/example/Projects", "name": "项目" }
   ]
 }
 ```
