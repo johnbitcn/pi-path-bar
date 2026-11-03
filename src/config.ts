@@ -10,9 +10,10 @@ export interface Config {
   icon: boolean;
   branch: boolean;
   session: boolean;
+  timeFormat: "24h" | "12h";
   aliases: FolderAlias[];
 }
-export const defaults = (): Config => ({ mode: "short", icon: true, branch: true, session: true, aliases: [] });
+export const defaults = (): Config => ({ mode: "short", icon: true, branch: true, session: true, timeFormat: "24h", aliases: [] });
 
 export function aliasName(value: string): string {
   const name = value.trim();
@@ -41,6 +42,10 @@ export function validateConfig(value: unknown): Config {
   if (data.mode !== undefined) {
     if (!["short", "auto", "full", "native"].includes(data.mode as string)) throw new Error("Invalid path display mode.");
     config.mode = data.mode as PathMode;
+  }
+  if (data.timeFormat !== undefined) {
+    if (data.timeFormat !== "24h" && data.timeFormat !== "12h") throw new Error("Invalid time format. Use 24h or 12h.");
+    config.timeFormat = data.timeFormat;
   }
   for (const key of ["icon", "branch", "session"] as const) {
     if (data[key] === undefined) continue;

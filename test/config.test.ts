@@ -43,10 +43,11 @@ test("config persists settings and aliases and reads latest saved changes", (t) 
   const file = join(temporary(t), "nested", "config.json");
   const first = new ConfigStore(file), second = new ConfigStore(file);
   assert.deepEqual(first.load(), defaults());
-  first.update((config) => { config.mode = "full"; });
+  first.update((config) => { config.mode = "full"; config.timeFormat = "12h"; });
   second.update((config) => { config.icon = false; setAlias(config, { path: "/tmp/a", name: "项目" }); });
   assert.equal(first.load().mode, "full");
   assert.equal(first.load().icon, false);
+  assert.equal(first.load().timeFormat, "12h");
   assert.deepEqual(first.load().aliases, [{ path: "/tmp/a", name: "项目" }]);
   first.update((config) => { config.aliases = []; });
   assert.deepEqual(second.load().aliases, []);
@@ -59,6 +60,9 @@ test("invalid config is not overwritten and missing drives keep their aliases", 
   assert.equal(readFileSync(file, "utf8"), "{invalid");
   assert.throws(() => validateConfig({ mode: "invalid" }));
   assert.throws(() => validateConfig({ icon: "false" }));
+  assert.equal(validateConfig({}).timeFormat, "24h");
+  assert.equal(validateConfig({ timeFormat: "24h" }).timeFormat, "24h");
+  for (const timeFormat of ["invalid", 12, null, true]) assert.throws(() => validateConfig({ timeFormat }));
   assert.throws(() => validateConfig({ aliases: [{ path: "relative", name: "a" }] }));
   assert.equal(validateConfig({ aliases: [{ path: "/a/disconnected/drive", name: "盘" }] }).aliases.length, 1);
 });

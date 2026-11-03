@@ -12,7 +12,8 @@ test("npm package contains only runtime sources, bilingual docs and license noti
   const output = npmCli
     ? execFileSync(process.execPath, [npmCli, ...args], { cwd: root, encoding: "utf8", timeout: 30000 })
     : execFileSync("npm", args, { cwd: root, encoding: "utf8", timeout: 30000 });
-  const [pack] = JSON.parse(output);
+  const result = JSON.parse(output);
+  const [pack] = Array.isArray(result) ? result : Object.values(result);
   assert.equal(pack.name, "pi-path-bar");
   assert.deepEqual(pack.bundled, []);
   assert.deepEqual(pack.files.map((file: { path: string }) => file.path).sort(), [
@@ -28,4 +29,21 @@ test("npm package contains only runtime sources, bilingual docs and license noti
   assert.equal(manifest.peerDependencies["@earendil-works/pi-coding-agent"], "*");
   assert.equal(manifest.peerDependencies["@earendil-works/pi-tui"], "*");
   assert.equal(manifest.dependencies, undefined);
+  const lock = JSON.parse(readFileSync(new URL("../package-lock.json", import.meta.url), "utf8"));
+  assert.equal(lock.version, manifest.version);
+  assert.equal(lock.packages[""].version, manifest.version);
+});
+
+test("release workflow stages with OIDC and never approves or publishes directly", () => {
+  const workflow = readFileSync(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(workflow, /runs-on: ubuntu-latest/);
+  assert.match(workflow, /id-token: write/);
+  assert.match(workflow, /node-version: '24'/);
+  assert.match(workflow, /npm install --global npm@11\.15\.0/);
+  for (const command of ["npm ci", "npm run check", "npm test", "npm pack --dry-run", "npm stage publish"]) {
+    assert.ok(workflow.includes(command), command);
+  }
+  assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN|npm publish|npm stage (approve|reject)|environment:/);
 });

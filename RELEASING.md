@@ -1,104 +1,95 @@
-# Publishing to npm
+# Staged publishing to npm
 
 This guide is for maintainers. It is not included in the npm package.
 
+GitHub Actions only stages packages. A maintainer must review and approve each staged version with 2FA before it becomes public. Do not use direct publishing, npm tokens, or another workflow to bypass approval.
+
 ## One-time setup
 
-1. Verify your npm account email.
-2. Enable two-factor authentication (2FA) on your npm account.
-3. Use the latest supported npm CLI.
-4. Log in from your own terminal:
+1. Verify your npm account email and enable two-factor authentication (2FA).
+2. In the npm package settings, configure a GitHub Actions Trusted Publisher:
+   - Owner: `johnbitcn`
+   - Repository: `pi-path-bar`
+   - Workflow filename: `publish.yml`
+   - Environment name: leave blank. This workflow does not use a GitHub Environment.
+3. Allow staged publishing. Leave **Allow npm publish** unchecked. Leave **Allow npm dist-tag** unchecked unless separate dist-tag management is required.
+4. Use GitHub-hosted runners and OIDC (`id-token: write`). Do not configure `NPM_TOKEN` or other publishing credentials in the workflow.
+
+The workflow uses Node.js 24 and npm CLI 11.15.0. Staged publishing requires npm CLI 11.15.0 or newer.
+
+Do not put passwords, tokens, recovery codes, or one-time codes in the repository, issue reports, or chat messages.
+
+## Prepare a release
+
+Start by reviewing the working tree. Choose a new version according to the change. Update the manifest and lockfile without creating a commit or tag:
 
 ```sh
-npm login --registry=https://registry.npmjs.org/
-npm whoami --registry=https://registry.npmjs.org/
-```
-
-Do not put passwords, tokens, recovery codes, or one-time codes in this repository, issue reports, or chat messages. Follow npm's interactive authentication prompts. For future automated releases, use npm trusted publishing instead of storing a long-lived token in CI.
-
-## First release: 0.1.0
-
-Run these commands from the repository root:
-
-```sh
-git status --short
-npm ci --ignore-scripts
+npm version minor --no-git-tag-version
+npm view pi-path-bar versions --json --registry=https://registry.npmjs.org/
+npm ci
 npm run check
 npm test
-npm view pi-path-bar name version --registry=https://registry.npmjs.org/
 npm pack --dry-run
 ```
 
-An npm `E404` response means no public package was found at that name. It is not a guarantee that npm will allow the name. If the name is unavailable, choose a scoped name you own and update the manifest, lockfile, docs, and install examples before publishing.
+Use `patch`, `minor`, `major`, or an explicit version as appropriate. Confirm that the exact target version has not already been published. A staged version also occupies its name/version pair; inspect pending versions on npm before retrying a failed or interrupted staging run.
 
-Review the pack file list. It should contain only:
+Stop if installation, type checking, tests, or package review fails. The package must contain only:
 
 - `package.json`
 - `src/*.ts`
 - `README.md` and `README.zh-CN.md`
 - `LICENSE` and `THIRD_PARTY_NOTICES.md`
 
-It must not contain `node_modules`, tests, Git metadata, personal configuration, tokens, or local session files. The extension is shipped as TypeScript source; Pi loads the entry from the `pi.extensions` manifest. Host-provided peer packages must not be bundled.
+It must not contain dependencies, tests, workflows, Git metadata, personal configuration, tokens, or local session files. Host-provided peer packages must not be bundled. Keep all relevant license notices. Review packed sources and repository history for private data; editing the current README does not remove old commits.
 
-Commit and push the reviewed release changes before publishing. Ensure that the working tree is clean and that version `0.1.0` has not already been published:
+## Commit, push, and stage
 
-```sh
-npm view pi-path-bar@0.1.0 version --registry=https://registry.npmjs.org/
-```
+Only after authorization to commit, push, and start the release:
 
-If that version exists, do not publish it again. Choose a new version instead.
+1. Commit the reviewed changes and version update.
+2. Push the commit to `main`.
+3. Run `.github/workflows/publish.yml` for that commit:
 
-Optional final dry run (runs the `prepublishOnly` checks, but does not upload the package):
+   ```sh
+   gh workflow run publish.yml --ref main
+   gh run list --workflow publish.yml --limit 5
+   gh run view <run-id> --log
+   ```
 
-```sh
-npm publish --dry-run --access public
-```
+4. Confirm that the run's commit SHA matches the reviewed commit. The workflow checks the version, runs `npm ci`, type checking, tests, and `npm pack --dry-run`, then runs `npm stage publish`.
+5. Record the commit SHA, version, workflow run URL, and returned stage ID. The staging output is also saved in the run summary.
+6. Stop. Report **staged, waiting for manual approval**, not **published**.
 
-Publish only after reviewing the output:
+The workflow is manually triggered and only runs on `main`. Do not trigger it repeatedly for the same version if a previous run may already have staged the package. A failed log retrieval is not evidence that staging failed.
 
-```sh
-npm publish --access public
-```
+## Manual review and approval
 
-The `prepublishOnly` script runs type checking and tests automatically. Complete npm's authentication/2FA prompts in your own terminal. A published name/version pair cannot be reused.
-
-## Verify the release
-
-```sh
-npm view pi-path-bar@0.1.0 version dist.tarball --registry=https://registry.npmjs.org/
-```
-
-Test from a separate directory or with an isolated Pi agent directory. Avoid loading both the local/Git copy and the npm copy:
+The maintainer reviews the pending package on the npm website and approves it with 2FA. The maintainer may instead run the following from their own authenticated terminal:
 
 ```sh
-pi -e npm:pi-path-bar@0.1.0
+npm stage view <stage-id>
+npm stage download <stage-id>
+npm stage approve <stage-id>
 ```
 
-Check compact paths, `/path-bar`, adding/editing/deleting aliases, Git state indicators, and light/dark theme changes. A permanent install uses:
+Agents and GitHub Actions must not execute approval. If review finds a problem, the maintainer rejects the stage, fixes the problem, and stages again. Never approve just to unblock automation.
+
+## Verify after approval
+
+Only after the maintainer approves, confirm the public package name and exact version:
 
 ```sh
-pi install npm:pi-path-bar
+npm view pi-path-bar@<version> name version dist.tarball --registry=https://registry.npmjs.org/
 ```
 
-After confirming the published package, tag the release:
+Only then report **published**. Test from a separate directory or an isolated Pi agent directory. Avoid loading both local/Git and npm copies:
 
 ```sh
-git tag -a v0.1.0 -m "Release 0.1.0"
-git push origin v0.1.0
+pi -e npm:pi-path-bar@<version>
 ```
 
-## Later releases
-
-Start with a clean working tree. Choose `patch`, `minor`, or `major` according to the change. This example updates the package and lockfile without creating a Git commit or tag:
-
-```sh
-npm version patch --no-git-tag-version
-npm run check
-npm test
-npm pack --dry-run
-```
-
-Commit and push the version update, publish the new version, verify it, then tag the matching release commit. Use the actual version in verification and tag commands.
+Check compact paths, aliases, Git indicators, both clock formats, idle clock refresh, `/path-bar`, and light/dark themes. Tag the matching release commit only after confirming the public package.
 
 Users update managed extensions with:
 
@@ -108,12 +99,8 @@ pi update --extensions
 
 Version-pinned installations stay pinned until their package specification is changed.
 
-## License and privacy checks
+## References
 
-- Keep `LICENSE` and all relevant upstream notices in the tarball.
-- Review dependency and code provenance changes before each release.
-- Review docs, packed sources, and repository history for private data. Editing the current README does not remove information from old commits.
-- `package.json` must not contain `private: true`.
-- Do not publish this package from an unreviewed worktree.
-
-References: [npm public packages](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages), [npm 2FA](https://docs.npmjs.com/configuring-two-factor-authentication), [npm trusted publishing](https://docs.npmjs.com/trusted-publishers).
+- [Staged publishing](https://docs.npmjs.com/staged-publishing)
+- [npm stage CLI](https://docs.npmjs.com/cli/v11/commands/npm-stage)
+- [Trusted publishing](https://docs.npmjs.com/trusted-publishers)

@@ -15,13 +15,14 @@ Pi 底栏扩展。支持简短路径、目录别名和随主题调整的 Git 状
 - 简短、自动和完整路径显示模式。
 - 为任意文件夹设置显示别名，不改变实际路径或环境变量。
 - 随主题调整的别名颜色，以及 Tide 风格的 Git 状态标记。
+- 路径行右侧显示本机时间，支持 12 小时制和 24 小时制。
 - 交互式设置菜单，自动保存配置。
 - 保留用量统计、模型信息和其他扩展的状态行。
 - 支持中文等 Unicode 目录名和别名。
 
 ## 安装
 
-首次发布到 npm 后，可以从 npm 安装：
+从 npm 安装：
 
 ```sh
 pi install npm:pi-path-bar
@@ -29,7 +30,7 @@ pi install npm:pi-path-bar
 pi -e npm:pi-path-bar
 ```
 
-首次发布前，或需要使用 Git 来源时，从 GitHub 安装：
+也可以从 GitHub 安装 Git 来源：
 
 ```sh
 pi install git:github.com/johnbitcn/pi-path-bar
@@ -63,10 +64,13 @@ pi -e ./src/index.ts
 | Folder icon（目录图标） | On | On、Off |
 | Git status（Git 状态） | On | On、Off |
 | Session name（会话名称） | On | On、Off |
+| Time format（时间格式） | 24h | 24h、12h（带 AM/PM） |
 | Add folder alias（添加目录别名） | — | 输入文件夹路径和名称 |
 | Manage folder aliases（管理目录别名） | — | 修改或删除别名 |
 
 **Native footer** 恢复 Pi 原生底栏。其他显示设置会保留，但在该模式下不生效。
+
+时间显示在路径行最右侧，使用本机时区。24h 模式显示 `09:05`，12h 模式显示 `09:05 AM`。分钟变化后 1 秒内自动刷新，空闲时也会更新。先为时间预留宽度，再压缩路径。宽度不足以容纳时间和一个路径字符时，隐藏时间。Native footer 模式会停止时间定时器。
 
 ### 路径显示模式
 
@@ -155,6 +159,7 @@ Short 和 Auto 在宽度不足时将中间目录折叠为 `…`。极窄时，�
   "icon": true,
   "branch": true,
   "session": true,
+  "timeFormat": "24h",
   "aliases": [
     { "path": "/home/example/Projects", "name": "Projects" }
   ]

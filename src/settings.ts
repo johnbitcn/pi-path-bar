@@ -25,15 +25,17 @@ export async function openSettings(ctx: ExtensionContext, get: () => Config, sav
       const items: SettingItem[] = [
         { id: "mode", label: "Path display", currentValue: modes[config.mode], values: Object.values(modes), description: "Short: always abbreviate. Auto: abbreviate when needed. Full: never abbreviate." },
         ...([ ["icon", "Folder icon"], ["branch", "Git status"], ["session", "Session name"] ] as const).map(([id, label]) => ({ id, label, currentValue: config[id] ? "On" : "Off", values: switches })),
+        { id: "timeFormat", label: "Time format", currentValue: config.timeFormat, values: ["24h", "12h"], description: "Local time at the right of the path line. 12h includes AM/PM. Not shown in Native footer mode." },
         { id: "add", label: "Add folder alias", currentValue: "Open", values: ["Open"], description: "Name any folder. A blank path uses the current directory. Only the display changes." },
         { id: "manage", label: "Manage folder aliases", currentValue: `${config.aliases.length} aliases`, values: ["Open"], description: "Edit a path or name, or delete an alias." },
       ];
       const list = new SettingsList(items, 10, getSettingsListTheme(), (id, value) => {
         selected = id;
         if (id === "add" || id === "manage") { done(id); return; }
-        const previous = id === "mode" ? modes[get().mode] : get()[id as "icon" | "branch" | "session"] ? "On" : "Off";
+        const previous = id === "mode" ? modes[get().mode] : id === "timeFormat" ? get().timeFormat : get()[id as "icon" | "branch" | "session"] ? "On" : "Off";
         const success = save((next) => {
           if (id === "mode") next.mode = (Object.keys(modes) as PathMode[]).find((mode) => modes[mode] === value)!;
+          else if (id === "timeFormat") next.timeFormat = value as Config["timeFormat"];
           else next[id as "icon" | "branch" | "session"] = value === "On";
         });
         if (!success) list.updateValue(id, previous);

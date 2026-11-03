@@ -18,17 +18,35 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
     catch (error) { ctx.ui.notify(`Cannot read ${store.file}: ${error instanceof Error ? error.message : String(error)}. The file will not be overwritten.`, "error"); }
   };
   let activeGit: ReturnType<typeof watchGit> | undefined;
+  let disposeFooter: (() => void) | undefined;
   const install = (ctx: ExtensionContext) => {
-    activeGit?.dispose();
-    activeGit = undefined;
+    disposeFooter?.();
+    disposeFooter = undefined;
     if (ctx.mode !== "tui") return;
     if (config.mode === "native") { ctx.ui.setFooter(undefined); return; }
     ctx.ui.setFooter((tui, theme, data) => {
       const monitor = config.branch ? watchGit(ctx.sessionManager.getCwd(), () => tui.requestRender()) : undefined;
       activeGit = monitor;
       const unsubscribe = data.onBranchChange(() => { monitor?.refresh(); tui.requestRender(); });
+      const clock = new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hourCycle: config.timeFormat === "12h" ? "h12" : "h23" });
+      let minute = Math.floor(Date.now() / 60_000);
+      const timer = setInterval(() => {
+        const next = Math.floor(Date.now() / 60_000);
+        if (next !== minute) { minute = next; tui.requestRender(); }
+      }, 1000);
+      timer.unref();
+      let disposed = false;
+      const dispose = () => {
+        if (disposed) return;
+        disposed = true;
+        clearInterval(timer);
+        unsubscribe();
+        monitor?.dispose();
+        if (activeGit === monitor) activeGit = undefined;
+      };
+      disposeFooter = dispose;
       return {
-        dispose() { unsubscribe(); monitor?.dispose(); if (activeGit === monitor) activeGit = undefined; },
+        dispose,
         invalidate() {},
         render(width: number): string[] {
           const state = monitor?.value ?? { kind: "none" as const };
@@ -37,7 +55,10 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
           const name = config.session ? ctx.sessionManager.getSessionName() : undefined;
           const suffix = `${gitSuffix}${name ? ` • ${name}` : ""}`;
           const display = resolveDisplayPath(ctx.sessionManager.getCwd(), homedir(), config.aliases);
-          const lines = [directoryLine(display.path, suffix, width, {
+          const time = clock.format(new Date());
+          const timeWidth = visibleWidth(time);
+          const showClock = width >= timeWidth + 3;
+          const path = directoryLine(display.path, suffix, showClock ? width - timeWidth - 2 : width, {
             mode: config.mode === "native" ? "short" : config.mode,
             icon: config.icon,
             aliasName: display.aliasName,
@@ -46,7 +67,8 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
               alias: (text) => theme.fg("mdLink", text),
               suffix: (text) => theme.fg(gitColor(state), text.slice(0, gitSuffix.length)) + theme.fg("dim", text.slice(gitSuffix.length)),
             },
-          })];
+          });
+          const lines = [showClock ? path + theme.fg("dim", " ".repeat(width - visibleWidth(path) - timeWidth) + time) : path];
 
           const totals = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 };
           let hitRate: number | undefined;
@@ -102,7 +124,7 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
   pi.on("session_start", async (_event, ctx) => { load(ctx); install(ctx); });
   pi.on("tool_result", () => { activeGit?.refresh(); });
   pi.on("agent_end", () => { activeGit?.refresh(); });
-  pi.on("session_shutdown", () => { activeGit?.dispose(); activeGit = undefined; });
+  pi.on("session_shutdown", () => { disposeFooter?.(); disposeFooter = undefined; });
   pi.registerCommand("path-bar", {
     description: "Configure the path bar and manage folder aliases",
     handler: async (_args, ctx) => {

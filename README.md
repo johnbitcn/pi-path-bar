@@ -15,13 +15,14 @@ A Pi extension for compact directory paths, folder aliases, and theme-aware Git 
 - Short, automatic, and full path display modes.
 - Display aliases for any folder, without changing actual paths or environment variables.
 - Theme-aware alias colors and Tide-style Git status indicators.
+- A right-aligned local clock with 12-hour and 24-hour formats.
 - An interactive settings menu with persistent configuration.
 - Existing usage statistics, model information, and extension status lines.
 - Unicode folder names and aliases.
 
 ## Installation
 
-After the first npm release, install from npm:
+Install from npm:
 
 ```sh
 pi install npm:pi-path-bar
@@ -29,7 +30,7 @@ pi install npm:pi-path-bar
 pi -e npm:pi-path-bar
 ```
 
-Before that release, or to use the Git source, install from GitHub:
+Or install the Git source from GitHub:
 
 ```sh
 pi install git:github.com/johnbitcn/pi-path-bar
@@ -63,10 +64,13 @@ Run `/path-bar`. Use the arrow keys to select an item, Enter or Space to change 
 | Folder icon | On | On, Off |
 | Git status | On | On, Off |
 | Session name | On | On, Off |
+| Time format | 24h | 24h, 12h (AM/PM) |
 | Add folder alias | — | Enter a folder path and a name |
 | Manage folder aliases | — | Edit or delete aliases |
 
 **Native footer** restores Pi's built-in footer. Other display settings are retained but do not apply in that mode.
+
+The clock shows local time at the right edge of the path line: `09:05` in 24h mode or `09:05 AM` in 12h mode. It refreshes within one second of a minute change, including while idle. Space is reserved for the clock before fitting the path. At widths too small for the clock and a path character, the clock is hidden. Native footer mode stops the clock timer.
 
 ### Path modes
 
@@ -155,6 +159,7 @@ If `PI_CODING_AGENT_DIR` is set, its directory is used instead. The extension ne
   "icon": true,
   "branch": true,
   "session": true,
+  "timeFormat": "24h",
   "aliases": [
     { "path": "/home/example/Projects", "name": "Projects" }
   ]
