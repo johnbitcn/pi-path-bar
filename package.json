@@ -1,6 +1,6 @@
 {
   "name": "pi-path-bar",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "A Pi extension for compact paths, folder aliases, and theme-aware Git status",
   "license": "MIT",
@@ -38,7 +38,8 @@
   ],
   "pi": {
     "extensions": [
-      "./src/index.ts"
+      "./src/index.ts",
+      "./src/reading-mode.ts"
     ]
   },
   "scripts": {

@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { loadExtensions } from "../node_modules/@earendil-works/pi-coding-agent/dist/core/extensions/loader.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 
@@ -29,13 +30,23 @@ test("npm package contains only runtime sources, bilingual docs and license noti
   assert.equal(manifest.license, "MIT");
   assert.equal(manifest.publishConfig.access, "public");
   assert.equal(manifest.publishConfig.registry, "https://registry.npmjs.org/");
-  assert.deepEqual(manifest.pi.extensions, ["./src/index.ts"]);
+  assert.deepEqual(manifest.pi.extensions, ["./src/index.ts", "./src/reading-mode.ts"]);
   assert.equal(manifest.peerDependencies["@earendil-works/pi-coding-agent"], "*");
   assert.equal(manifest.peerDependencies["@earendil-works/pi-tui"], "*");
   assert.equal(manifest.dependencies, undefined);
   const lock = JSON.parse(readFileSync(new URL("../package-lock.json", import.meta.url), "utf8"));
   assert.equal(lock.version, manifest.version);
   assert.equal(lock.packages[""].version, manifest.version);
+});
+
+test("package default entries load both the footer and reading-mode commands", async () => {
+  const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  const paths = manifest.pi.extensions.map((file: string) => fileURLToPath(new URL(`../${file}`, import.meta.url)));
+  const result = await loadExtensions(paths, root);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.extensions.length, 2);
+  const commands = result.extensions.flatMap((extension) => [...extension.commands.keys()]).sort();
+  assert.deepEqual(commands, ["path-bar", "reading-mode"]);
 });
 
 test("README previews use self-contained SVG outlines in both languages", () => {
