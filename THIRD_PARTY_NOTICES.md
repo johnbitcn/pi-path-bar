@@ -64,4 +64,11 @@ SOFTWARE.
 
 ## Fonts and icons
 
-The extension uses Unicode characters, including Nerd Font icon code points. No font files, icon images, or other font assets are bundled. Users supply their terminal font separately.
+The extension uses Unicode characters, including Nerd Font icon code points. Users supply their terminal font separately; no font files are bundled.
+
+The README previews in `assets/*.svg` contain outlined lettering and icons from Maple Mono NF CN. The outlines are positioned and colored for these examples; the two dashed arrows are drawn separately.
+
+- Maple Mono: Copyright 2022 The Maple Mono Project Authors. [Project](https://github.com/subframe7536/maple-font); [SIL Open Font License 1.1](https://openfontlicense.org).
+- Nerd Fonts provides the patched icon glyphs. [Project and glyph-source license audit](https://github.com/ryanoasis/nerd-fonts/blob/master/license-audit.md).
+- Folder-open icon: Font Awesome by Fonticons, Inc., used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). [Font Awesome](https://fontawesome.com). Converted to a colored SVG outline from the patched font.
+- Git branch symbol: [Powerline Symbols](https://github.com/powerline/fonts), via the patched font. See the Nerd Fonts license audit above.

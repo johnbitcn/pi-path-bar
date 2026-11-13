@@ -2,61 +2,29 @@
 
 English | [简体中文](README.zh-CN.md)
 
-A Pi extension for compact directory paths, folder aliases, and theme-aware Git status.
+A Pi footer extension for compact paths, folder aliases, Git status, and local time. Keeps usage statistics, model information, and other extension status lines.
 
-```text
- ~/C/P/demo-app ( main)
- Projects/demo-app ( main +2 !1 ?3)
- demo ( main ⇡1)
-```
-
-## Features
-
-- Short, automatic, and full path display modes.
-- Display aliases for any folder, without changing actual paths or environment variables.
-- Theme-aware alias colors and Tide-style Git status indicators.
-- A right-aligned local clock with 12-hour and 24-hour formats.
-- An interactive settings menu with persistent configuration.
-- Existing usage statistics, model information, and extension status lines.
-- Unicode folder names and aliases.
+![Path bar examples with compact paths, aliases and Git status](assets/footer-preview.svg)
 
 ## Installation
 
-Install from npm:
-
 ```sh
 pi install npm:pi-path-bar
-# Or try it for one run:
-pi -e npm:pi-path-bar
 ```
 
-Or install the Git source from GitHub:
+Or install from GitHub:
 
 ```sh
 pi install git:github.com/johnbitcn/pi-path-bar
 ```
 
-Run `/reload` in an existing Pi session, then open `/path-bar`.
+In an existing Pi session, run `/reload`, then `/path-bar` to open settings.
 
-For a single Pi run:
-
-```sh
-pi -e git:github.com/johnbitcn/pi-path-bar
-```
-
-For local development, run from the project directory:
-
-```sh
-pi install "$PWD"
-# Or load the extension for one run:
-pi -e ./src/index.ts
-```
-
-Load only one copy of the extension. Remove an existing local or Git installation before switching sources. Folder icons require a Nerd Font; you can turn them off in settings.
+Load only one copy of the extension. Folder icons require a Nerd Font, or you can turn them off in settings.
 
 ## Settings
 
-Run `/path-bar`. Use the arrow keys to select an item, Enter or Space to change a setting or open an action, and Esc to exit. Changes apply immediately and are saved automatically.
+Run `/path-bar`. Use the arrow keys to select an item, Enter or Space to change it, and Esc to exit. Changes apply immediately and are saved automatically. The menu uses English.
 
 | Setting | Default | Choices |
 | --- | --- | --- |
@@ -68,126 +36,60 @@ Run `/path-bar`. Use the arrow keys to select an item, Enter or Space to change 
 | Add folder alias | — | Enter a folder path and a name |
 | Manage folder aliases | — | Edit or delete aliases |
 
-**Native footer** restores Pi's built-in footer. Other display settings are retained but do not apply in that mode.
+- **Short:** abbreviate intermediate folders and keep the final folder name.
+- **Auto:** show the full path when space allows; otherwise abbreviate it.
+- **Full:** do not abbreviate; truncate if needed.
+- **Native footer:** restore Pi's built-in footer without losing your settings.
 
-The clock shows local time at the right edge of the path line: `09:05` in 24h mode or `09:05 AM` in 12h mode. It refreshes within one second of a minute change, including while idle. Space is reserved for the clock before fitting the path. At widths too small for the clock and a path character, the clock is hidden. Native footer mode stops the clock timer.
-
-### Path modes
-
-- **Short:** always abbreviate intermediate folders to their first grapheme, including Unicode names.
-- **Auto:** show the full path when it fits; otherwise abbreviate it.
-- **Full:** do not abbreviate; truncate the line if needed.
-
-Short and Auto collapse intermediate folders to `…` when necessary. At very small widths, the root and icon are dropped before the final folder name is truncated.
-
-The home directory is shown as `~`. Named roots such as `~` and folder aliases receive a folder icon. Absolute paths starting with `/` do not.
+Local time appears at the right of the path line. The home directory is shown as `~`. Unicode folder names are supported.
 
 ## Folder aliases
 
-Choose **Add folder alias** to name any folder. Enter an absolute path or a path starting with `~/`. Leave the path blank and press Enter to use the current directory. The target must exist and be a directory.
+Choose **Add folder alias**, then enter a folder path and a display name. Use an absolute path or `~/`, or leave the path blank for the current directory.
 
-For example, name `~/CloudDrive` **Cloud**:
+For example, name `~/CloudDrive/Projects/demo-app` **demo**:
 
-```text
- Cloud
- Cloud/P/demo-app
-```
+![Folder alias shown as demo and demo/src](assets/folder-alias-preview.svg)
 
-You can also name `~/CloudDrive/Projects/demo-app` **demo**. Then that folder displays as ` demo`, and its child displays as ` demo/src`.
-
-### Matching and editing
-
-- An alias matches its folder and descendants, at directory boundaries.
-- If multiple aliases match, the longest path wins. Parent and child aliases are not combined.
-- The alias name remains intact when possible. Descendant folders follow the selected path mode.
-- Without a match, the extension uses `~` or an absolute path.
-- Paths are normalized and `~` is expanded on save. Symbolic links are not resolved.
-- Paths and names must be unique. Names cannot be empty, `~`, `.`, or `..`, or contain slashes, backslashes, newlines, or control characters.
-- When editing, leave a field blank to keep its existing value. Esc cancels.
-- Deleting an alias does not delete the folder. Stored aliases remain available when a drive is disconnected.
-
-Only the matched alias name uses Pi's `mdLink` theme color: brighter blue in the built-in dark theme and darker blue in the light theme. Custom themes control their own link color. The icon, descendant path, and session name use gray; Git uses its status color. Colors follow theme changes.
-
-Aliases affect only the footer. They do not change the working directory, tool paths, or environment variables.
+- An alias applies to its folder and descendants. If several aliases match, the longest path wins.
+- Use **Manage folder aliases** to edit or delete them. Leave a field blank to keep its value; Esc cancels.
+- Aliases change only the display name. Deleting an alias does not delete the folder.
 
 ## Git status
 
-Git indicators borrow Tide's notation, but use Pi theme text colors rather than background colors. The extension does not modify fish or Tide.
-
-| State | Theme token | Built-in appearance |
-| --- | --- | --- |
-| Initial loading or query failure | `text` | Default text color, with `?` |
-| Clean working tree | `mdLink` | Blue |
-| Staged, unstaged, or untracked changes | `warning` | Yellow |
-| Conflicts or an active Git operation | `error` | Red |
-
-Red takes priority over yellow, then blue. Outside a Git repository, Git information is hidden. Alias color is independent of Git status.
-
-```text
- demo ( main ⇣2 ⇡1 *1 ~2 +3 !4 ?5)
-```
+![Git status: main, behind 2, ahead 1, stash 1, conflicts 2, staged 3, unstaged 4, untracked 5](assets/git-status-preview.svg)
 
 | Indicator | Meaning |
 | --- | --- |
-| `⇣N` | N commits behind upstream |
-| `⇡N` | N commits ahead of upstream |
+| `⇣N` / `⇡N` | N commits behind / ahead of upstream |
 | `*N` | N stash entries |
-| `~N` | N conflicted files; covers `DD AU UD UA DU AA UU` |
+| `~N` | N conflicted files |
 | `+N` | N staged entries |
 | `!N` | N unstaged entries |
 | `?N` | N untracked entries |
 
-Zero counts are omitted. Untracked directories are grouped using Git's default behavior. Conflicts are not counted again as staged or unstaged changes. Ahead, behind, and stash counts alone do not change the color. Ahead and behind are omitted if no upstream exists.
+In the default themes, blue means clean, yellow means changes, and red means conflicts or an active Git operation. Colors follow your theme. Git information is hidden outside a repository.
 
-Active operations include merge, rebase, cherry-pick, revert, and bisect. Rebase progress is shown when available. Detached HEAD displays `#tag` or `@short-commit`. Linked worktrees are supported.
+## Experimental reading mode
 
-Queries run asynchronously with a timeout. Status refreshes every five seconds, after tool execution or an agent turn, and when the branch changes. Disabling Git status or selecting Native footer stops the extension's queries.
-
-## Configuration
-
-Settings are shared across projects and stored in:
-
-```text
-~/.pi/agent/pi-path-bar.json
-```
-
-If `PI_CODING_AGENT_DIR` is set, its directory is used instead. The extension never sets or changes that variable.
-
-```json
-{
-  "mode": "short",
-  "icon": true,
-  "branch": true,
-  "session": true,
-  "timeFormat": "24h",
-  "aliases": [
-    { "path": "/home/example/Projects", "name": "Projects" }
-  ]
-}
-```
-
-The `branch` field controls Git status. Settings survive restarts and `/reload`. Opening the menu reloads the file. Saves use a temporary file and atomic replacement. Other running Pi instances must reopen the menu or reload to pick up changes.
-
-If the new file is absent, the extension reads the legacy `pi-show-dir.json`. The next save writes the new file and leaves the old file intact. Invalid configuration is reported and is not overwritten.
-
-## Limitations
-
-- Pi's public API replaces the entire footer. If another extension also calls `setFooter()`, the last one wins.
-- The public API does not expose the auto-compaction setting, so the custom footer does not show the native `(auto)` marker.
-- This is an unofficial Pi extension. It is not affiliated with or endorsed by Pi or Tide.
-
-## Development
-
-Requires Node.js 22.19 or newer and Git for Git status and integration tests.
+Load reading mode separately from the local repository:
 
 ```sh
-npm install --ignore-scripts
-npm test
-npm run check
+pi -e ./src/reading-mode.ts
 ```
 
-## License and acknowledgments
+- **`Alt+Esc`** (Mac: **`Option+Esc`**): hide the editor and footer. Conversation and tool output remain available for scrolling.
+- **A single `Esc`** or **`Alt+Esc`** again: restore the interface and keep your draft.
+- You can also enter with **`/reading-mode`**.
 
-[MIT](LICENSE). See [Third-party notices](THIRD_PARTY_NOTICES.md) for Pi and Tide copyright and license texts. Host packages and font files are not bundled.
+Requires fullscreen mode. Shortcut support depends on your terminal; use the command if it does not respond. Run `/reload` after switching TUI modes. Reading mode is experimental and may need updates after a Pi upgrade.
 
-Maintainers: see the [npm release guide](https://github.com/johnbitcn/pi-path-bar/blob/main/RELEASING.md) for authentication, packaging checks, publishing, and verification.
+## Notes
+
+- Settings are shared across projects and saved automatically. The default file is `~/.pi/agent/pi-path-bar.json`.
+- Avoid enabling multiple footer-replacement extensions at once; they can override each other.
+- The custom footer does not show the native `(auto)` marker.
+
+## License
+
+[MIT](LICENSE). See [Third-party notices](THIRD_PARTY_NOTICES.md) for related copyright and license texts. This unofficial extension is not affiliated with or endorsed by Pi or Tide.
