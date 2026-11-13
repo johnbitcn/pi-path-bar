@@ -2,7 +2,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-A Pi footer extension for compact paths, folder aliases, Git status, and local time. Keeps usage statistics, model information, and other extension status lines.
+A Pi extension for a compact footer and focused reading. Shows paths, folder aliases, Git status, and local time. Keeps usage statistics, model information, and other extension status lines.
 
 ![Path bar examples with compact paths, aliases and Git status](assets/footer-preview.svg)
 
@@ -70,19 +70,17 @@ For example, name `~/CloudDrive/Projects/demo-app` **demo**:
 
 In the default themes, blue means clean, yellow means changes, and red means conflicts or an active Git operation. Colors follow your theme. Git information is hidden outside a repository.
 
-## Experimental reading mode
+## Reading mode
 
-Load reading mode separately from the local repository:
-
-```sh
-pi -e ./src/reading-mode.ts
-```
+Loaded automatically with the extension. Enter with the shortcut or command.
 
 - **`Alt+Esc`** (Mac: **`Option+Esc`**): hide the editor and footer. Conversation and tool output remain available for scrolling.
 - **A single `Esc`** or **`Alt+Esc`** again: restore the interface and keep your draft.
 - You can also enter with **`/reading-mode`**.
 
-Requires fullscreen mode. Shortcut support depends on your terminal; use the command if it does not respond. Run `/reload` after switching TUI modes. Reading mode is experimental and may need updates after a Pi upgrade.
+Requires Pi 1.5 or later in fullscreen mode. Use the command if the shortcut does not respond. Run `/reload` after switching TUI modes.
+
+When upgrading from the standalone version, remove the `-e ./src/reading-mode.ts` launch argument to avoid loading it twice.
 
 ## Notes
 

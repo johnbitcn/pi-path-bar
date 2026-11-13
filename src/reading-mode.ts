@@ -22,7 +22,6 @@ export function readingLayout(tui: TUI, marker: Component): { original: Componen
   };
 }
 
-/** Experimental opt-in extension: pi -e ./src/reading-mode.ts */
 export default function (pi: ExtensionAPI) {
   let tui: TUI | undefined;
   let marker: Component | undefined;
@@ -54,7 +53,7 @@ export default function (pi: ExtensionAPI) {
     renderer.setFocus(guard);
     renderer.requestRender();
   };
-  pi.registerCommand("reading-mode", { description: "Toggle reading mode (experimental); Esc restores the editor", handler: async (_args, ctx) => toggle(ctx) });
+  pi.registerCommand("reading-mode", { description: "Toggle reading mode; Esc restores the editor", handler: async (_args, ctx) => toggle(ctx) });
   pi.on("session_start", (_event, ctx) => {
     cleanup();
     if (ctx.mode !== "tui") return;
