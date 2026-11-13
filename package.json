@@ -1,6 +1,6 @@
 {
   "name": "pi-path-bar",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "A Pi extension for compact paths, folder aliases, and theme-aware Git status",
   "license": "MIT",
@@ -21,6 +21,8 @@
   },
   "files": [
     "src/",
+    "assets/",
+    "CHANGELOG.md",
     "README.md",
     "README.zh-CN.md",
     "LICENSE",

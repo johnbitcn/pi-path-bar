@@ -17,10 +17,14 @@ test("npm package contains only runtime sources, bilingual docs and license noti
   assert.equal(pack.name, "pi-path-bar");
   assert.deepEqual(pack.bundled, []);
   assert.deepEqual(pack.files.map((file: { path: string }) => file.path).sort(), [
-    "LICENSE", "README.md", "README.zh-CN.md", "THIRD_PARTY_NOTICES.md", "package.json",
+    "CHANGELOG.md", "LICENSE", "README.md", "README.zh-CN.md", "THIRD_PARTY_NOTICES.md", "package.json",
+    "assets/footer-preview.svg", "assets/folder-alias-preview.svg", "assets/git-status-preview.svg",
     "src/config.ts", "src/git.ts", "src/index.ts", "src/path.ts", "src/reading-mode.ts", "src/settings.ts",
   ].sort());
   const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(pack.version, manifest.version);
+  const changelog = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
+  assert.equal(changelog.match(/^## \[([^\]]+)\]/m)?.[1], manifest.version);
   assert.notEqual(manifest.private, true);
   assert.equal(manifest.license, "MIT");
   assert.equal(manifest.publishConfig.access, "public");
@@ -32,6 +36,23 @@ test("npm package contains only runtime sources, bilingual docs and license noti
   const lock = JSON.parse(readFileSync(new URL("../package-lock.json", import.meta.url), "utf8"));
   assert.equal(lock.version, manifest.version);
   assert.equal(lock.packages[""].version, manifest.version);
+});
+
+test("README previews use self-contained SVG outlines in both languages", () => {
+  const docs = ["README.md", "README.zh-CN.md"].map((file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8"));
+  for (const name of ["footer-preview", "folder-alias-preview", "git-status-preview"]) {
+    const file = `assets/${name}.svg`;
+    const svg = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+    assert.match(svg, /<svg[^>]+viewBox=/);
+    assert.match(svg, /<title[^>]*>[^<]+<\/title>/);
+    assert.match(svg, /<path /);
+    assert.doesNotMatch(svg, /<text\b|<script\b|<foreignObject\b|<image\b|@font-face|font-family/i);
+    const ids = new Set([...svg.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]));
+    for (const [, target] of svg.matchAll(/\bhref="([^"]+)"/g)) {
+      assert.ok(target.startsWith("#") && ids.has(target.slice(1)), `Invalid SVG reference: ${target}`);
+    }
+    for (const doc of docs) assert.ok(doc.includes(`](${file})`), `Missing preview: ${file}`);
+  }
 });
 
 test("release workflow stages with OIDC and never approves or publishes directly", () => {
