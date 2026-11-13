@@ -54,6 +54,23 @@ pi -e ./src/index.ts
 
 Load only one copy of the extension. Remove an existing local or Git installation before switching sources. Folder icons require a Nerd Font; you can turn them off in settings.
 
+## Experimental reading mode
+
+This prototype is loaded separately, not automatically with the footer extension. Start Pi from the local repository:
+
+```sh
+pi -e ./src/reading-mode.ts
+```
+
+- In fullscreen mode, press `Alt+Esc` (Option+Esc on Mac) to hide the editor and footer and give their space to the transcript.
+- Conversation, tool output, extension widgets, status and pending messages remain. Transcript scrolling stays available.
+- Press `Alt+Esc` again or a single `Esc` to restore the interface. Your draft is preserved.
+- Editing and submission are blocked while reading. `Ctrl+c` restores the interface, then reaches the original editor handler.
+- If `Alt+Esc` does nothing, use `/reading-mode` to enter without the shortcut, then press `Esc` to exit.
+- The terminal must send a distinct Alt-modified Escape sequence (Kitty CSI-u or xterm modifyOtherKeys). Ambiguous legacy double-Escape input is not intercepted, preserving Pi's double-Esc behavior. `Ctrl+G` remains available for Pi's external editor.
+
+The prototype depends on Pi 1.5.x internals, not a stable layout API. It refuses unsupported layouts. Run `/reload` after switching TUI modes before using it again. It does not modify the Pi installation or install itself automatically.
+
 ## Settings
 
 Run `/path-bar`. Use the arrow keys to select an item, Enter or Space to change a setting or open an action, and Esc to exit. Changes apply immediately and are saved automatically.
