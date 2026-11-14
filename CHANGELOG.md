@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.1]
+
+- Add a Pi Plugins preview image and the `pi.image` metadata for the package listing.
+- Include PNG and standalone SVG preview assets showing the compact footer, folder aliases, Git status, and reading mode shortcut.
+
 ## [0.4.0]
 
 - Reading mode now loads automatically with pi-path-bar. Hide the editor and footer while keeping conversation and tool output visible.

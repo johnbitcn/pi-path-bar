@@ -20,6 +20,7 @@ test("npm package contains only runtime sources, bilingual docs and license noti
   assert.deepEqual(pack.files.map((file: { path: string }) => file.path).sort(), [
     "CHANGELOG.md", "LICENSE", "README.md", "README.zh-CN.md", "THIRD_PARTY_NOTICES.md", "package.json",
     "assets/footer-preview.svg", "assets/folder-alias-preview.svg", "assets/git-status-preview.svg",
+    "assets/plugins-preview.png", "assets/plugins-preview.svg",
     "src/config.ts", "src/git.ts", "src/index.ts", "src/path.ts", "src/reading-mode.ts", "src/settings.ts",
   ].sort());
   const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
