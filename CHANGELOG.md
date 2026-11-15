@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.4.1]
+## [0.4.2]
 
 - Add a Pi Plugins preview image and the `pi.image` metadata for the package listing.
 - Include PNG and standalone SVG preview assets showing the compact footer, folder aliases, Git status, and reading mode shortcut.
