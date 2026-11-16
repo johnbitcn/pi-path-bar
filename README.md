@@ -44,22 +44,15 @@ Run `/path-bar`. Use the arrow keys to select an item, Enter or Space to change 
 
 Local time appears at the right of the path line. The home directory is shown as `~`. Unicode folder names are supported.
 
-## Footer segments
+## Footer order
 
-Other Pi extensions can add text to the right of the path line. A segment is a status key with the `path-bar:` prefix:
-
-```ts
-ctx.ui.setStatus("path-bar:net", theme.fg("dim", "⌁"));
-ctx.ui.setStatus("path-bar:net", undefined); // remove it
-```
-
-- The id may contain `a-z`, `0-9`, `.`, `_`, and `-`, up to 32 characters.
-- Segments appear left of the time by default, sorted by id.
-- Text stays on one line. Each extension keeps its own colors.
+Other Pi extensions can show extra text at the right of the path line. New segments appear left of the time.
 
 Choose **Footer order** in `/path-bar` to set the order. Use `up` / `down` to select a segment, `<` / `>` (or `,` / `.`) to move it, and `Enter` or `Esc` to close. `clock` is the local time.
 
 Move a segment left to keep it visible on narrow terminals: they drop segments from the right, so the segment nearest the edge disappears first. The order is stored in `segments` in the config file, as ids from left to right.
+
+Extension authors: see [footer segments](https://github.com/johnbitcn/pi-path-bar/blob/main/docs/footer-segments.md).
 
 ## Folder aliases
 

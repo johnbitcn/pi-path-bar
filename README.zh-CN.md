@@ -44,22 +44,15 @@ pi install git:github.com/johnbitcn/pi-path-bar
 
 时间显示在路径行右侧，使用本机时区。主目录显示为 `~`，支持中文目录名。
 
-## 底栏片段
+## 底栏顺序
 
-其他 Pi 扩展可以在路径行右侧显示文字。片段就是一个带 `path-bar:` 前缀的状态键：
-
-```ts
-ctx.ui.setStatus("path-bar:net", theme.fg("dim", "⌁"));
-ctx.ui.setStatus("path-bar:net", undefined); // 移除
-```
-
-- id 可用 `a-z`、`0-9`、`.`、`_`、`-`，最长 32 个字符。
-- 默认显示在时间左侧，按 id 排序。
-- 文字保持单行。各扩展保留自己的颜色。
+其他 Pi 扩展可以在路径行右侧显示额外文字。新片段默认出现在时间左侧。
 
 在 `/path-bar` 中选择 **Footer order** 调整顺序。`up` / `down` 选择片段，`<` / `>`（或 `,` / `.`）左右移动，`Enter` 或 `Esc` 退出。`clock` 表示本机时间。
 
 把片段移到左侧，可让它在窄屏上保留：终端变窄时从右往左逐个丢弃，最靠近屏幕边缘的片段先消失。顺序保存在配置文件的 `segments` 中，从左到右排列。
+
+扩展作者请见[底栏片段](https://github.com/johnbitcn/pi-path-bar/blob/main/docs/footer-segments.md)。
 
 ## 目录别名
 
