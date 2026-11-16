@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } 
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+import { SEGMENT_ID } from "./segments.ts";
 
 export type PathMode = "short" | "auto" | "full" | "native";
 export interface FolderAlias { path: string; name: string }
@@ -11,9 +12,11 @@ export interface Config {
   branch: boolean;
   session: boolean;
   timeFormat: "24h" | "12h";
+  /** Left-to-right order of the footer segments on the path line; "clock" is the built-in time. */
+  segments: string[];
   aliases: FolderAlias[];
 }
-export const defaults = (): Config => ({ mode: "short", icon: true, branch: true, session: true, timeFormat: "24h", aliases: [] });
+export const defaults = (): Config => ({ mode: "short", icon: true, branch: true, session: true, timeFormat: "24h", segments: [], aliases: [] });
 
 export function aliasName(value: string): string {
   const name = value.trim();
@@ -46,6 +49,12 @@ export function validateConfig(value: unknown): Config {
   if (data.timeFormat !== undefined) {
     if (data.timeFormat !== "24h" && data.timeFormat !== "12h") throw new Error("Invalid time format. Use 24h or 12h.");
     config.timeFormat = data.timeFormat;
+  }
+  if (data.segments !== undefined) {
+    if (!Array.isArray(data.segments) || data.segments.some((id: unknown) => typeof id !== "string" || !SEGMENT_ID.test(id))) {
+      throw new Error("segments must be an array of segment ids, for example [\"net\", \"clock\"]");
+    }
+    config.segments = [...new Set(data.segments as string[])];
   }
   for (const key of ["icon", "branch", "session"] as const) {
     if (data[key] === undefined) continue;

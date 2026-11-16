@@ -33,6 +33,7 @@ pi install git:github.com/johnbitcn/pi-path-bar
 | Git status（Git 状态） | On | On、Off |
 | Session name（会话名称） | On | On、Off |
 | Time format（时间格式） | 24h | 24h、12h（带 AM/PM） |
+| Footer order（底栏片段顺序） | — | 左右移动额外片段 |
 | Add folder alias（添加目录别名） | — | 输入文件夹路径和名称 |
 | Manage folder aliases（管理目录别名） | — | 修改或删除别名 |
 
@@ -42,6 +43,23 @@ pi install git:github.com/johnbitcn/pi-path-bar
 - **Native footer：**恢复 Pi 原生底栏，保留已有设置。
 
 时间显示在路径行右侧，使用本机时区。主目录显示为 `~`，支持中文目录名。
+
+## 底栏片段
+
+其他 Pi 扩展可以在路径行右侧显示文字。片段就是一个带 `path-bar:` 前缀的状态键：
+
+```ts
+ctx.ui.setStatus("path-bar:net", theme.fg("dim", "⌁"));
+ctx.ui.setStatus("path-bar:net", undefined); // 移除
+```
+
+- id 可用 `a-z`、`0-9`、`.`、`_`、`-`，最长 32 个字符。
+- 默认显示在时间左侧，按 id 排序。
+- 文字保持单行。各扩展保留自己的颜色。
+
+在 `/path-bar` 中选择 **Footer order** 调整顺序。`up` / `down` 选择片段，`<` / `>`（或 `,` / `.`）左右移动，`Enter` 或 `Esc` 退出。`clock` 表示本机时间。
+
+把片段移到左侧，可让它在窄屏上保留：终端变窄时从右往左逐个丢弃，最靠近屏幕边缘的片段先消失。顺序保存在配置文件的 `segments` 中，从左到右排列。
 
 ## 目录别名
 

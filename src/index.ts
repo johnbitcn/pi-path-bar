@@ -4,9 +4,10 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { ConfigStore, defaults, type Config } from "./config.ts";
 import { openSettings } from "./settings.ts";
 import { gitColor, gitText, watchGit } from "./git.ts";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext, ReadonlyFooterDataProvider } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { directoryLine, resolveDisplayPath } from "./path.ts";
+import { CLOCK, SEGMENT_KEY, resolveOrder, segmentEntries } from "./segments.ts";
 
 const tokens = (n: number) => n < 1000 ? String(n) : n < 1e6 ? `${(n / 1000).toFixed(1)}k` : `${(n / 1e6).toFixed(1)}M`;
 
@@ -19,6 +20,7 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
   };
   let activeGit: ReturnType<typeof watchGit> | undefined;
   let disposeFooter: (() => void) | undefined;
+  let footerData: ReadonlyFooterDataProvider | undefined;
   const install = (ctx: ExtensionContext) => {
     disposeFooter?.();
     disposeFooter = undefined;
@@ -27,6 +29,7 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
     ctx.ui.setFooter((tui, theme, data) => {
       const monitor = config.branch ? watchGit(ctx.sessionManager.getCwd(), () => tui.requestRender()) : undefined;
       activeGit = monitor;
+      footerData = data;
       const unsubscribe = data.onBranchChange(() => { monitor?.refresh(); tui.requestRender(); });
       const clock = new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hourCycle: config.timeFormat === "12h" ? "h12" : "h23" });
       let minute = Math.floor(Date.now() / 60_000);
@@ -43,6 +46,7 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
         unsubscribe();
         monitor?.dispose();
         if (activeGit === monitor) activeGit = undefined;
+        if (footerData === data) footerData = undefined;
       };
       disposeFooter = dispose;
       return {
@@ -55,10 +59,17 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
           const name = config.session ? ctx.sessionManager.getSessionName() : undefined;
           const suffix = `${gitSuffix}${name ? ` • ${name}` : ""}`;
           const display = resolveDisplayPath(ctx.sessionManager.getCwd(), homedir(), config.aliases);
-          const time = clock.format(new Date());
-          const timeWidth = visibleWidth(time);
-          const showClock = width >= timeWidth + 3;
-          const path = directoryLine(display.path, suffix, showClock ? width - timeWidth - 2 : width, {
+          const time = theme.fg("dim", clock.format(new Date()));
+          const entries = segmentEntries(data.getExtensionStatuses());
+          const group = resolveOrder(config.segments, entries.keys()).flatMap((id) => {
+            const text = id === CLOCK ? time : entries.get(id) ?? "";
+            return text ? [text] : [];
+          });
+          // Narrow terminals drop from the right: the segment nearest the edge goes first.
+          while (group.length && visibleWidth(group.join(" ")) > width - 3) group.pop();
+          const groupText = group.join(theme.fg("dim", " "));
+          const groupWidth = visibleWidth(groupText);
+          const path = directoryLine(display.path, suffix, group.length ? width - groupWidth - 2 : width, {
             mode: config.mode === "native" ? "short" : config.mode,
             icon: config.icon,
             aliasName: display.aliasName,
@@ -68,7 +79,7 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
               suffix: (text) => theme.fg(gitColor(state), text.slice(0, gitSuffix.length)) + theme.fg("dim", text.slice(gitSuffix.length)),
             },
           });
-          const lines = [showClock ? path + theme.fg("dim", " ".repeat(width - visibleWidth(path) - timeWidth) + time) : path];
+          const lines = [group.length ? path + theme.fg("dim", " ".repeat(width - visibleWidth(path) - groupWidth)) + groupText : path];
 
           const totals = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 };
           let hitRate: number | undefined;
@@ -111,7 +122,7 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
           right = available > 0 ? truncateToWidth(right, available, "…") : "";
           const padding = right ? " ".repeat(Math.max(2, width - visibleWidth(left) - visibleWidth(right))) : "";
           lines.push(theme.fg("dim", left) + theme.fg("dim", padding + right));
-          const statuses = [...data.getExtensionStatuses()].sort(([a], [b]) => a.localeCompare(b));
+          const statuses = [...data.getExtensionStatuses()].filter(([key]) => !SEGMENT_KEY.test(key)).sort(([a], [b]) => a.localeCompare(b));
           if (statuses.length) {
             const text = statuses.map(([, value]) => value.replace(/[\r\n\t]/g, " ")).join(" ");
             lines.push(truncateToWidth(text, width, "…"));
@@ -131,11 +142,11 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
       if (ctx.mode !== "tui") { ctx.ui.notify("/path-bar requires TUI mode", "error"); return; }
       load(ctx);
       install(ctx);
-      const save = (change: (next: Config) => void) => {
-        try { config = store.update(change); install(ctx); return true; }
+      const save = (change: (next: Config) => void, reinstall = true) => {
+        try { config = store.update(change); if (reinstall) install(ctx); return true; }
         catch (error) { ctx.ui.notify(`Could not save: ${error instanceof Error ? error.message : String(error)}`, "error"); return false; }
       };
-      await openSettings(ctx, () => config, save);
+      await openSettings(ctx, () => config, save, () => footerData?.getExtensionStatuses() ?? new Map());
     },
   });
 }
