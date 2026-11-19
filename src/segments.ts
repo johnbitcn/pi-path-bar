@@ -23,13 +23,161 @@ export interface ClassifiedStatuses {
 }
 
 const LEADING_SGR = /^((?:\x1b\[[0-9;]*m)+)/;
+const ANSI_TOKEN = /\x1b\[[0-9;]*m/g;
+const RESET_SGR = /^\x1b\[(?:0|22|39|22;39|39;22)?m$/;
+
+function extractColorPrefix(segment: string): string | undefined {
+  const match = LEADING_SGR.exec(segment.trimStart());
+  if (!match) return undefined;
+  // Ignore bare reset codes (`\x1b[0m`, `\x1b[39m`, `\x1b[22;39m`, etc.) that carry no foreground color.
+  const codes = match[1].match(ANSI_TOKEN) ?? [];
+  const active = codes.filter((code) => !RESET_SGR.test(code));
+  return active.length ? active.join("") : undefined;
+}
+
 function preserveColor(original: string, compact: string): string {
-  const prefix = LEADING_SGR.exec(original)?.[1];
+  const prefix = extractColorPrefix(original);
   return prefix ? `${prefix}${compact}\x1b[0m` : compact;
+}
+
+const PI_USAGE_SHORT_LABELS: Record<string, string> = {
+  "7d-son": "7s",
+  "7d-opus": "7o",
+  "daily": "1d",
+  "weekly": "7d",
+  "week": "7d",
+  "monthly": "mo",
+  "premium": "pm",
+  "chat": "ch",
+  "comp": "cp",
+  "cap": "cap",
+  "credits": "cr",
+  "extra": "ex",
+  "budget": "bg",
+  "search": "sr",
+  "tools": "tl",
+};
+
+function shortResetUnit(rawReset: string): string {
+  const trimmed = rawReset.trim();
+  if (/^now$/i.test(trimmed)) return "now";
+  const unit = /(\d+[dhms])/i.exec(trimmed);
+  return unit ? unit[1].toLowerCase() : trimmed;
+}
+
+function formatPiUsageStatus(text: string): string | undefined {
+  const plainAll = stripTerminalSequences(text).trim();
+  if (!plainAll) return undefined;
+  if (/^usage unavailable$/i.test(plainAll)) return preserveColor(text, "u?");
+
+  // Split into per-window chunks starting at `<optional-ansi><label>:` so each window keeps its own color.
+  const windowHeader = /(?:^|\s)((?:\x1b\[[0-9;]*m)*[^\s\x1b:]+(?:\x1b\[[0-9;]*m)*:)/g;
+  const starts: number[] = [];
+  for (const match of text.matchAll(windowHeader)) {
+    const start = (match.index ?? 0) + (match[0].length - match[1].length);
+    starts.push(start);
+  }
+  if (!starts.length) return preserveColor(text, truncateToWidth(plainAll, 14, "…"));
+
+  interface ParsedWindow {
+    index: number;
+    limited: boolean;
+    remainingScore: number;
+    rendered: string;
+  }
+
+  const parsed: ParsedWindow[] = [];
+  for (let i = 0; i < starts.length; i++) {
+    const chunk = text.slice(starts[i], starts[i + 1] ?? text.length).trim();
+    const colon = chunk.indexOf(":");
+    if (colon === -1) continue;
+    const rawLabel = chunk.slice(0, colon);
+    const rawRest = chunk.slice(colon + 1);
+
+    const label = stripTerminalSequences(rawLabel).trim();
+    const shortLabel = PI_USAGE_SHORT_LABELS[label] ?? label;
+    const color = extractColorPrefix(rawRest) ?? extractColorPrefix(rawLabel);
+
+    let restPlain = stripTerminalSequences(rawRest).trim();
+    const resetMatch = /\(↺(?:in\s+)?([^)]+)\)/.exec(restPlain);
+    const resetUnit = resetMatch ? shortResetUnit(resetMatch[1]) : undefined;
+    if (resetMatch) restPlain = restPlain.replace(resetMatch[0], "").trim();
+
+    const hasBang = /(?:^|\s)!(?:\s|$)/.test(restPlain);
+    if (hasBang) restPlain = restPlain.replace(/(?:^|\s)!(?:\s|$)/g, " ").trim();
+
+    let value = restPlain
+      .replace(/\s+left$/i, "")
+      .replace(/\s+used$/i, "")
+      .replace(/\$(\d+)\.00\b/g, "$$$1")
+      .trim();
+
+    const reached = /^REACHED$/i.test(value);
+    if (reached) value = "MAX";
+
+    const pctMatch = /^(\d+(?:\.\d+)?)%$/.exec(value);
+    const countMatch = /^(\d+)\/(\d+)$/.exec(value);
+    let remainingScore = 100;
+    if (pctMatch) remainingScore = Number(pctMatch[1]);
+    else if (countMatch && Number(countMatch[2]) > 0) remainingScore = (Number(countMatch[1]) / Number(countMatch[2])) * 100;
+    else if (reached) remainingScore = 0;
+
+    const limited = hasBang || reached || remainingScore <= 0;
+    const compact = `${shortLabel}:${value}${limited ? "!" : ""}${limited && resetUnit ? `↺${resetUnit}` : ""}`;
+    const rendered = color ? `${color}${compact}\x1b[0m` : compact;
+    parsed.push({ index: i, limited, remainingScore, rendered });
+  }
+
+  if (!parsed.length) return preserveColor(text, truncateToWidth(plainAll, 14, "…"));
+  const chosen = parsed.length <= 2
+    ? parsed
+    : [...parsed]
+        .sort((a, b) => Number(b.limited) - Number(a.limited) || a.remainingScore - b.remainingScore || a.index - b.index)
+        .slice(0, 2)
+        .sort((a, b) => a.index - b.index);
+  return chosen.map((item) => item.rendered).join(" ");
+}
+
+function compactDollar(raw: string): string {
+  const value = Number(raw.replace(/[$,]/g, ""));
+  if (!Number.isFinite(value)) return raw;
+  if (value === 0) return "$0";
+  if (value >= 10) return `$${Math.round(value)}`;
+  if (value >= 0.1) return `$${value.toFixed(1).replace(/\.0$/, "")}`;
+  return raw;
+}
+
+function formatPiUsageTokenStatus(text: string): string | undefined {
+  const plainAll = stripTerminalSequences(text).trim();
+  if (!plainAll) return undefined;
+  if (/^token tracking unavailable$/i.test(plainAll)) return preserveColor(text, "tok?");
+
+  const segments = text.split(/\s*·\s*/);
+  const formatted: string[] = [];
+  for (const part of segments) {
+    const plain = stripTerminalSequences(part).trim();
+    const dollar = /\$[\d.,]+/.exec(plain)?.[0];
+    if (!dollar) continue;
+    const compact = compactDollar(dollar);
+    const color = extractColorPrefix(part);
+    formatted.push(color ? `${color}${compact}\x1b[0m` : compact);
+  }
+  if (!formatted.length) return preserveColor(text, truncateToWidth(plainAll, 14, "…"));
+  return formatted.join("/");
 }
 
 /** Built-in Type 1 adapters that compress known third-party statuses for the top border. */
 export const ADAPTED_EXTENSIONS: readonly ExtensionAdapter[] = [
+  {
+    key: "pi-usage",
+    id: "pi-usage",
+    format: formatPiUsageStatus,
+  },
+  {
+    key: "pi-usage-token-status",
+    id: "pi-usage-token-status",
+    format: formatPiUsageTokenStatus,
+  },
   {
     key: "ssh",
     id: "ssh",
@@ -110,7 +258,7 @@ export function segmentEntries(statuses: ReadonlyMap<string, string>): Map<strin
 
 /**
  * Split extension statuses into three tiers for Minimal mode:
- * - Type 2: explicit `path-bar:<id>` segments (highest priority)
+ * - Type 2: explicit `path-bar:<id>` segments (highest priority; suppresses matching Type 1 key)
  * - Type 1: known third-party statuses compressed by built-in adapters
  * - Type 3: unknown extensions rendered on the auto-hiding line below the bottom border
  */
@@ -133,7 +281,9 @@ export function classifyStatuses(
   const unknown: Array<[string, string]> = [];
   for (const [key, text] of remaining) {
     const adapter = byKey.get(key);
-    if (adapter && !slots.has(adapter.id)) {
+    if (adapter) {
+      // Explicit Type 2 registration wins and suppresses the legacy key so it does not duplicate below.
+      if (slots.has(adapter.id)) continue;
       const formatted = adapter.format(text);
       if (formatted) {
         slots.set(adapter.id, { id: adapter.id, text: segmentText(formatted), source: "adapted" });

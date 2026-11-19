@@ -136,14 +136,55 @@ test("classifyStatuses separates Type 2 segments, Type 1 adapted extensions, and
   const coloredPonytail = classifyStatuses(new Map([["ponytail", "\x1b[32m●\x1b[0m 🐴 ponytail: ⚡ FULL"]]));
   assert.equal(coloredPonytail.slots.get("ponytail")?.text, "\x1b[32m♞F\x1b[0m");
 
-  // Explicit Type 2 registration overrides Type 1 adapter with the same id.
+  // Explicit Type 2 registration overrides Type 1 adapter with the same id and suppresses legacy duplicate.
   const override = classifyStatuses(new Map([
     ["path-bar:ssh", "SSH!"],
     ["ssh", "SSH: prod:/app"],
+    ["path-bar:pi-usage", "5h:99%"],
+    ["pi-usage", "5h:82% left (↺in 2h 15m)"],
   ]));
   assert.equal(override.slots.get("ssh")?.source, "segment");
   assert.equal(override.slots.get("ssh")?.text, "SSH!");
-  assert.deepEqual(override.unknown, [["ssh", "SSH: prod:/app"]]);
+  assert.equal(override.slots.get("pi-usage")?.source, "segment");
+  assert.equal(override.slots.get("pi-usage")?.text, "5h:99%");
+  assert.deepEqual(override.unknown, []);
+});
+
+test("built-in @kaishin/pi-usage adapters apply Strategy A and Scheme T2 with per-window colors", () => {
+  // Strategy A: dual window drops reset countdown when not limited and keeps per-window ANSI colors (including \x1b[22;39m).
+  const normal = "\x1b[2m5h:\x1b[22;39m\x1b[32m82% left\x1b[39m \x1b[2m(↺in 2h 15m)\x1b[22;39m \x1b[33m7d:\x1b[39m\x1b[33m65% left\x1b[39m \x1b[2m(↺in 4d 3h 12m)\x1b[22;39m";
+  const resNormal = classifyStatuses(new Map([["pi-usage", normal]]));
+  assert.equal(resNormal.slots.get("pi-usage")?.source, "adapted");
+  assert.equal(stripTerminalSequences(resNormal.slots.get("pi-usage")!.text), "5h:82% 7d:65%");
+  assert.equal(resNormal.slots.get("pi-usage")!.text, "\x1b[32m5h:82%\x1b[0m \x1b[33m7d:65%\x1b[0m");
+  assert.deepEqual(resNormal.unknown, []);
+
+  // Strategy A: limited / 0% window appends single-unit reset countdown.
+  const limited = "\x1b[31m5h:\x1b[39m\x1b[31m0% left\x1b[39m\x1b[31m !\x1b[39m \x1b[2m(↺in 2h 15m)\x1b[22;39m \x1b[2m7d:\x1b[22;39m\x1b[32m65% left\x1b[39m \x1b[2m(↺in 4d 3h)\x1b[22;39m";
+  const resLimited = classifyStatuses(new Map([["pi-usage", limited]]));
+  assert.equal(stripTerminalSequences(resLimited.slots.get("pi-usage")!.text), "5h:0%!↺2h 7d:65%");
+
+  // Strategy A: >2 windows keeps the 2 most urgent windows in original relative order, abbreviates long labels & currency.
+  const multi = "premium:293/300 (↺in 12d) chat:10/100 (↺in 5d) extra:$1.25/$10.00 (↺in 3d) cap:REACHED (↺now)";
+  const resMulti = classifyStatuses(new Map([["pi-usage", multi]]));
+  assert.equal(stripTerminalSequences(resMulti.slots.get("pi-usage")!.text), "ch:10/100 cap:MAX!↺now");
+
+  const currency = classifyStatuses(new Map([["pi-usage", "extra:$1.25/$10.00 (↺in 2d) credits:$4.50 used"]]));
+  assert.equal(stripTerminalSequences(currency.slots.get("pi-usage")!.text), "ex:$1.25/$10 cr:$4.50");
+
+  // Strategy A unavailable fallback preserves warning color.
+  const unavail = classifyStatuses(new Map([["pi-usage", "\x1b[33musage unavailable\x1b[39m"]]));
+  assert.equal(unavail.slots.get("pi-usage")?.text, "\x1b[33mu?\x1b[0m");
+
+  // Scheme T2: pi-usage-token-status compacts 5h/wk/mo costs to slash notation with per-window risk colors.
+  const tokenStatus = "\x1b[2m5h:\x1b[22;39m\x1b[36m$1.23\x1b[39m · \x1b[33mwk:\x1b[39m\x1b[36m$4.56\x1b[39m · \x1b[31mmo:\x1b[39m\x1b[36m$12.34\x1b[39m";
+  const resToken = classifyStatuses(new Map([["pi-usage-token-status", tokenStatus]]));
+  assert.equal(resToken.slots.get("pi-usage-token-status")?.source, "adapted");
+  assert.equal(stripTerminalSequences(resToken.slots.get("pi-usage-token-status")!.text), "$1.2/$4.6/$12");
+  assert.equal(resToken.slots.get("pi-usage-token-status")!.text, "\x1b[2m$1.2\x1b[0m/\x1b[33m$4.6\x1b[0m/\x1b[31m$12\x1b[0m");
+
+  const tokenUnavail = classifyStatuses(new Map([["pi-usage-token-status", "\x1b[33mtoken tracking unavailable\x1b[39m"]]));
+  assert.equal(tokenUnavail.slots.get("pi-usage-token-status")?.text, "\x1b[33mtok?\x1b[0m");
 });
 
 test("packRightSlots folds overflow slots into +N badge", () => {
@@ -511,4 +552,61 @@ test("Footer order screen toggles visibility for clock, Type 1 adapted, and Type
   assert.ok(screens[0].includes("(adapted)"));
   assert.ok(!screens[0].includes("unknown-ext"));
   assert.deepEqual(store.load().hiddenSegments.sort(), ["clock", "ssh"]);
+});
+
+test("Footer order allows moving clock anywhere across Type 1 and Type 2 slots without losing offline order", async (t) => {
+  const dir = tempDir(t);
+  const store = new ConfigStore(join(dir, "config.json"));
+  // Seed an offline configured segment ("offline") to ensure reordering active items + clock preserves it.
+  store.update((cfg) => { cfg.segments = ["offline", "pi-usage", "ponytail", "clock"]; });
+  let config = store.load();
+  const statuses = new Map([
+    ["pi-usage", "5h:82% left (↺in 2h 15m)"],
+    ["ponytail", "○ 🐴 ponytail: ⚡ FULL"],
+  ]);
+
+  // Visible rows start as: ["pi-usage", "ponytail", "clock"], cursor starts on "clock" (index 2).
+  // Move clock left twice (`<`, `<`) so clock becomes first before pi-usage and ponytail.
+  const sequence = [
+    ["\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\r"], // open Footer order
+    ["<", "<", "\x1b"],
+    ["\x1b"],
+  ];
+  const ctx: any = {
+    ui: {
+      custom: (build: any) => new Promise((done) => {
+        const component = build({ requestRender() {} }, { fg: (_: string, text: string) => text, bold: (text: string) => text }, {}, done);
+        for (const key of sequence.shift()!) component.handleInput(key);
+      }),
+      notify(message: string, kind: string) { assert.notEqual(kind, "error", message); },
+    },
+  };
+
+  await openSettings(ctx, () => config, (change, reinstall) => {
+    assert.equal(reinstall, false);
+    config = store.update(change);
+    return true;
+  }, () => statuses);
+
+  assert.equal(sequence.length, 0);
+  const savedOrder = store.load().segments;
+  assert.ok(savedOrder.includes("offline"));
+  assert.ok(savedOrder.indexOf("clock") < savedOrder.indexOf("pi-usage"));
+  assert.ok(savedOrder.indexOf("pi-usage") < savedOrder.indexOf("ponytail"));
+
+  // Verify Minimal top border renders clock first according to saved order.
+  const { slots } = classifyStatuses(statuses);
+  const line = renderMinimalTopBorder({
+    totals: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 },
+    subscription: false,
+    showSession: false,
+    timeFormat: "24h",
+    now: new Date(2026, 0, 1, 20, 30),
+    slots,
+    order: savedOrder,
+    hidden: new Set(),
+    theme: plainTheme,
+    borderColor: (s) => s,
+  }, 80, 0);
+  assert.ok(line.endsWith(" 20:30 5h:82% ♘F ──"), `unexpected line: ${line}`);
 });

@@ -50,7 +50,7 @@ Local time appears at the right of the path line. The home directory is shown as
 **Minimal mode** is enabled by default. It hides the footer rows and moves compact status onto the top and bottom borders of the editor. Turn it off in `/path-bar` to restore the multi-line footer (or Native footer).
 
 - **Top border (left):** fixed 5-column spinner slot while running (zero-jitter alignment with idle), followed by compact token usage, cache hit rate, cost, and session name. Rare long notices (retry, compaction, branch summary) temporarily take over this area.
-- **Top border (right):** registered `path-bar:*` segments, built-in adapted extensions (`ponytail`, `ssh`, `preset`, `usage`, `debug-provider`), and local time. Overflowing slots fold into a `+N` badge.
+- **Top border (right):** registered `path-bar:*` segments (highest priority), built-in adapted extensions (`pi-usage`, `pi-usage-token-status`, `ponytail`, `ssh`, `preset`, `usage`, `debug-provider`), and local time (`clock`, reorderable). Overflowing slots fold into a `+N` badge.
 - **Bottom border (left):** compact path (with aliases) and Git status.
 - **Bottom border (right):** shortened model name, thinking level, and context usage (`◐42%/200k`, dropping `/200k` on narrow screens).
 - **Unknown extensions:** other extension statuses appear on a single line below the bottom border only when active, and hide automatically when empty.

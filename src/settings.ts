@@ -15,9 +15,10 @@ async function editOrder(ctx: ExtensionContext, get: () => Config, save: Save, s
   const { slots } = classifyStatuses(statuses());
   const hidden = new Set(get().hiddenSegments);
   const visible = new Set<string>([CLOCK, ...slots.keys(), ...hidden]);
-  const list = resolveOrder(get().segments, visible);
+  // Preserve offline configured ids in `list` so reordering clock or active slots never drops them.
+  const list = resolveOrder(get().segments, new Set([...visible, ...get().segments]));
   const rows = () => list.filter((id) => visible.has(id));
-  let cursor = Math.max(0, list.indexOf(CLOCK));
+  let cursor = Math.max(0, rows().indexOf(CLOCK));
   const swap = (a: string, b: string) => {
     const [i, j] = [list.indexOf(a), list.indexOf(b)];
     [list[i], list[j]] = [list[j], list[i]];

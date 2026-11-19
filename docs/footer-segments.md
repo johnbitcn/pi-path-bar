@@ -27,7 +27,7 @@ Configured ids that no extension registered are kept in the config, so uninstall
 
 When the row does not fit, the rightmost segment is dropped, then the row is measured again (in Minimal mode, dropped slots fold into a `+N` badge). Order decides priority: a segment moved to the left survives longer.
 
-Users can press `Space` in **Footer order** to hide any `path-bar:<id>` segment, built-in adapted extension (`ponytail`, `ssh`, `preset`, `usage`, `debug-provider`), or `clock`. Hidden ids are persisted in `hiddenSegments`. In Minimal mode, hidden adapted extensions do not fall back to the unknown-extension row below the bottom border.
+Users can press `Space` in **Footer order** to hide any `path-bar:<id>` segment, built-in adapted extension (`pi-usage`, `pi-usage-token-status`, `ponytail`, `ssh`, `preset`, `usage`, `debug-provider`), or `clock`, and use `<` / `>` (or `,` / `.`) to move any item including `clock` to any position. Explicit `path-bar:<id>` registrations always take precedence over built-in adapters with the same id and suppress the legacy key so it is not duplicated below the bottom border. Hidden ids are persisted in `hiddenSegments`; in Minimal mode, hidden adapted extensions do not fall back to the unknown-extension row.
 
 ## Files
 
