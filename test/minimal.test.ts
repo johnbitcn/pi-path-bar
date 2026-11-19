@@ -23,7 +23,7 @@ import {
   type MinimalBottomInput,
   type MinimalTopInput,
 } from "../src/minimal.ts";
-import { classifyStatuses } from "../src/segments.ts";
+import { ADAPTED_EXTENSIONS, SEGMENT_ID, classifyStatuses } from "../src/segments.ts";
 import { openSettings } from "../src/settings.ts";
 
 initTheme("dark", false);
@@ -185,6 +185,195 @@ test("built-in @kaishin/pi-usage adapters apply Strategy A and Scheme T2 with pe
 
   const tokenUnavail = classifyStatuses(new Map([["pi-usage-token-status", "\x1b[33mtoken tracking unavailable\x1b[39m"]]));
   assert.equal(tokenUnavail.slots.get("pi-usage-token-status")?.text, "\x1b[33mtok?\x1b[0m");
+});
+
+test("built-in @narumitw/pi-usage adapter (usage) handles countdowns, static windows, copilot, balances and Type 2 override", () => {
+  const vectors: ReadonlyArray<[string, string]> = [
+    ["5h:98% left", "5h:98%"],
+    ["cmd:50% left", "cmd:50%"],
+    ["codex:50% left", "codex:50%"],
+    ["\x1b[31m\x1b[39m\x1b[32m5h:98% left\x1b[39m", "\x1b[32m5h:98%\x1b[0m"],
+    ["\x1b[31m\x1b[22;39m5h:98% left", "5h:98%"],
+    ["codex 89% ↻ 2h30m · 97% ↻ 5d17h", "5h:89% 7d:97%"],
+    ["codex fast 0% ↻ 2h30m · 97% ↻ 5d17h", "5h:0%!↺2h 7d:97%"],
+    ["codex 0% ↻ 0m · 97% ↻ 5d17h", "5h:0%!↺now 7d:97%"],
+    ["codex 0% ↻ < 1m", "5h:0%!↺1m"],
+    ["codex (Fast unknown) 89% ↻ 2h30m · 97% ↻ 5d17h", "5h:89% 7d:97%"],
+    ["kimi 82% ↻ 2h30m · 65% ↻ 4d12h · mo:90%", "5h:82% 7d:65%"],
+    ["cmd 5h:100% · wk:97% · mo:98%", "7d:97% mo:98%"],
+    ["minimax cn 5h:unlimited · wk:70%", "5h:∞ 7d:70%"],
+    ["zen r:12% · w:45% · m:60%", "7d:45% mo:60%"],
+    ["zen 100% ↻ 2h15m · 45% ↻ 4d", "5h:100%!↺2h 7d:45%"],
+    ["zen 12% ↻ 2h30m · 45% ↻ 4d · 60% ↻ 18d", "7d:45% mo:60%"],
+    ["chatgpt plan 85% ↻ 2h30m 92% ↻ 5d", "5h:85% 7d:92%"],
+    ["chatgpt plan 85% 5h 92% wk", "5h:85% 7d:92%"],
+    ["copilot 293/300 98% ↻ 12d", "pm:98%"],
+    ["copilot chat 0/100 0% +2 over ↻ 5d", "ch:0%!↺5d"],
+    ["copilot credits 0/100 0% +5 over ↻ 12d", "cr:0%!↺12d"],
+    ["copilot premium unlimited", "pm:∞"],
+    ["codex no credits", "cr:0!"],
+    ["codex credits unlimited", "cr:∞"],
+    ["codex credits available", "cr:ok"],
+    ["codex 25 credits", "cr:25"],
+    ["deepseek CNY 12.50 · USD 4.20", "¥13/$4.2"],
+    ["anthropic $12.50 left", "$13"],
+    ["baseten no Model APIs usage", "$0"],
+    ["fireworks no rated usage", "$0"],
+    ["auth unavailable", "u?"],
+    ["selection required", "u?"],
+    ["usage err: timeout", "u?"],
+    ["chatgpt usage: web only", "u?"],
+    ["deepseek balance unavailable", "u?"],
+  ];
+
+  for (const [raw, expected] of vectors) {
+    const res = classifyStatuses(new Map([["usage", raw]]));
+    assert.equal(res.slots.get("usage")?.source, "adapted", raw);
+    assert.equal(res.slots.get("usage")?.text, expected, raw);
+    assert.deepEqual(res.unknown, [], raw);
+  }
+
+  const override = classifyStatuses(new Map([
+    ["path-bar:usage", "5h:50%"],
+    ["usage", "codex 89% ↻ 2h30m · 97% ↻ 5d17h"],
+  ]));
+  assert.equal(override.slots.get("usage")?.source, "segment");
+  assert.equal(override.slots.get("usage")?.text, "5h:50%");
+  assert.deepEqual(override.unknown, []);
+});
+
+test("built-in @hk_net/pi-usage-bars adapter compresses progress bars, risk colors, finance mode and Type 2 override", () => {
+  const vectors: ReadonlyArray<[string, string]> = [
+    ["\x1b[2mClaude usage: loading…\x1b[39m", "\x1b[2mu…\x1b[0m"],
+    ["\x1b[33mClaude usage unavailable (HTTP 429)\x1b[39m", "\x1b[33mu?\x1b[0m"],
+    [
+      "\x1b[2mClaude \x1b[39m\x1b[2mS \x1b[39m\x1b[32m████\x1b[39m\x1b[2m░░░░\x1b[39m \x1b[32m48%\x1b[39m\x1b[2m ⟳ 2h 15m\x1b[39m \x1b[2mW \x1b[39m\x1b[33m██████░░\x1b[39m \x1b[33m75%\x1b[39m\x1b[2m ⟳ 4d 3h\x1b[39m",
+      "\x1b[32ms:48%\x1b[0m \x1b[33m7d:75%\x1b[0m",
+    ],
+    [
+      "\x1b[2mZAI Coding Plan (Global) \x1b[39m\x1b[2m5h \x1b[39m\x1b[31m████████\x1b[39m \x1b[31m100%\x1b[39m\x1b[2m ⟳ 2h 15m\x1b[39m \x1b[2mW \x1b[39m\x1b[32m██░░░░░░\x1b[39m \x1b[32m25%\x1b[39m",
+      "\x1b[31m5h:100%!↺2h\x1b[0m \x1b[32m7d:25%\x1b[0m",
+    ],
+    [
+      "\x1b[2mClaude \x1b[39m\x1b[2mI \x1b[39m\x1b[32m░░░░░░░░\x1b[39m \x1b[32m<1%\x1b[39m \x1b[2mL \x1b[39m\x1b[31m████████\x1b[39m \x1b[31m100%\x1b[39m\x1b[2m ⟳ <1m\x1b[39m \x1b[2mW \x1b[39m\x1b[33m██████░░\x1b[39m \x1b[33m80%\x1b[39m\x1b[33m stale\x1b[39m",
+      "\x1b[31mL:100%!↺1m\x1b[0m \x1b[33m7d:80%\x1b[0m\x1b[33m~\x1b[0m",
+    ],
+    [
+      "\x1b[2mOpenRouter \x1b[39m\x1b[2mCredit balance · $45.00 · Month · $3.20\x1b[39m",
+      "\x1b[2m$45/$3.2\x1b[0m",
+    ],
+    [
+      "\x1b[2mDeepSeek \x1b[39m\x1b[2mBalance · $12.34\x1b[39m",
+      "\x1b[2m$12\x1b[0m",
+    ],
+    [
+      "\x1b[2mMoonshot/Kimi API (China) \x1b[39m\x1b[2mAvailable balance · CN¥18.50\x1b[39m",
+      "\x1b[2m¥19\x1b[0m",
+    ],
+    [
+      "\x1b[2mCustom Provider \x1b[39m\x1b[2mNo balance info\x1b[39m",
+      "\x1b[2mu?\x1b[0m",
+    ],
+  ];
+
+  for (const [raw, expected] of vectors) {
+    const res = classifyStatuses(new Map([["@hk_net/pi-usage-bars", raw]]));
+    assert.equal(res.slots.get("pi-usage-bars")?.source, "adapted", raw);
+    assert.equal(res.slots.get("pi-usage-bars")?.text, expected, raw);
+    assert.deepEqual(res.unknown, [], raw);
+  }
+
+  const override = classifyStatuses(new Map([
+    ["path-bar:pi-usage-bars", "5h:10%"],
+    ["@hk_net/pi-usage-bars", "\x1b[2mDeepSeek \x1b[39m\x1b[2mBalance · $12.34\x1b[39m"],
+  ]));
+  assert.equal(override.slots.get("pi-usage-bars")?.source, "segment");
+  assert.equal(override.slots.get("pi-usage-bars")?.text, "5h:10%");
+  assert.deepEqual(override.unknown, []);
+});
+
+test("built-in @sreetej510/pi-usage & @subaud-tools/pi-usage adapter (provider-usage) handles windows, budgets and Type 2 override", () => {
+  const vectors: ReadonlyArray<[string, string]> = [
+    ["checking", "u…"],
+    ["usage error", "u?"],
+    ["usage unavailable", "u?"],
+    ["usage rate-limited (5m)", "u!↺5m"],
+    ["codex 42% 5h 18% 7d", "5h:42% 7d:18%"],
+    ["codex spark 100% 5h 60% 7d (12m old)", "5h:100%! 7d:60%"],
+    ["claude 35% 5h 12% 7d", "5h:35% 7d:12%"],
+    ["claude 62% $62/$100", "$62/$100"],
+    ["claude 100% $100/$100", "$100/$100!"],
+    ["claude 62% $62/$100 20% $4/$20 extra", "bg:62% ex:20%"],
+    ["claude 100% $100/$100 20% $4/$20 extra", "bg:100%! ex:20%"],
+    ["Codex · 5h 100% ↻2h · 7d 18% ↻4d", "5h:100%!↺2h 7d:18%"],
+    ["Claude · 5h 35% ↻1h · Sonnet 7d 12% ↻3d", "5h:35% 7s:12%"],
+    ["OpenRouter · $12.34/$50", "$12/$50"],
+    ["codex no credits", "cr:0!"],
+    ["unlimited credits", "cr:∞"],
+    ["credits available", "cr:ok"],
+    ["25 credits", "cr:25"],
+  ];
+
+  for (const [raw, expected] of vectors) {
+    const res = classifyStatuses(new Map([["provider-usage", raw]]));
+    assert.equal(res.slots.get("provider-usage")?.source, "adapted", raw);
+    assert.equal(res.slots.get("provider-usage")?.text, expected, raw);
+    assert.deepEqual(res.unknown, [], raw);
+  }
+
+  const override = classifyStatuses(new Map([
+    ["path-bar:provider-usage", "5h:12%"],
+    ["provider-usage", "codex 42% 5h 18% 7d"],
+  ]));
+  assert.equal(override.slots.get("provider-usage")?.source, "segment");
+  assert.equal(override.slots.get("provider-usage")?.text, "5h:12%");
+  assert.deepEqual(override.unknown, []);
+});
+
+test("built-in @cad0p/pi-usage adapter (00-quota -> quota) keeps 24-bit risk colors, Strategy A and Type 2 override", () => {
+  const vectors: ReadonlyArray<[string, string]> = [
+    ["\x1b[2mquota …\x1b[39m", "\x1b[2mu…\x1b[0m"],
+    ["\x1b[2mquota: no providers configured in Pi\x1b[39m", "\x1b[2mu?\x1b[0m"],
+    [
+      "\x1b[38;2;217;119;87mClaude:\x1b[0m\x1b[38;2;63;185;80m○\x1b[0m \x1b[38;2;63;185;80m12%\x1b[0m  \x1b[38;2;16;163;127mCodex:\x1b[0m\x1b[38;2;210;153;34m◕\x1b[0m \x1b[38;2;210;153;34m78%\x1b[0m  \x1b[38;2;66;133;244mAgy:\x1b[0m\x1b[38;2;248;81;73m●\x1b[0m \x1b[38;2;248;81;73m95%\x1b[0m  \x1b[38;2;122;162;247mAgy C/G:\x1b[0m\x1b[38;2;63;185;80m◔\x1b[0m \x1b[38;2;63;185;80m30%\x1b[0m",
+      "\x1b[38;2;210;153;34mCx:78%\x1b[0m \x1b[38;2;248;81;73mAg:95%\x1b[0m",
+    ],
+    [
+      "\x1b[38;2;217;119;87mClaude:\x1b[0m\x1b[38;2;248;81;73m●\x1b[0m \x1b[38;2;248;81;73m100%\x1b[0m  \x1b[38;2;16;163;127mCodex:\x1b[0m\x1b[38;2;63;185;80m○\x1b[0m \x1b[38;2;63;185;80m8%\x1b[0m",
+      "\x1b[38;2;248;81;73mCl:100%!\x1b[0m \x1b[38;2;63;185;80mCx:8%\x1b[0m",
+    ],
+    [
+      "\x1b[38;2;217;119;87mClaude:\x1b[0m\x1b[31m!\x1b[39m  \x1b[38;2;16;163;127mCodex:\x1b[0m\x1b[38;2;63;185;80m○\x1b[0m \x1b[38;2;63;185;80m8%\x1b[0m  \x1b[38;2;0;122;255mOP-Go:\x1b[0m\x1b[38;2;63;185;80m○\x1b[0m \x1b[38;2;63;185;80m3%\x1b[0m",
+      "\x1b[31mCl:!\x1b[0m \x1b[38;2;63;185;80mCx:8%\x1b[0m",
+    ],
+    [
+      "\x1b[38;2;122;162;247mAgy C/G:\x1b[0m\x1b[38;2;248;81;73m●\x1b[0m \x1b[38;2;248;81;73m85%\x1b[0m  \x1b[38;2;0;122;255mOP-Go:\x1b[0m\x1b[33m~\x1b[39m  \x1b[38;2;255;255;255mGH:\x1b[0m\x1b[38;2;63;185;80m○\x1b[0m \x1b[38;2;63;185;80m10%\x1b[0m",
+      "\x1b[38;2;248;81;73mAgC:85%\x1b[0m \x1b[33mOG:~\x1b[0m",
+    ],
+  ];
+
+  for (const [raw, expected] of vectors) {
+    const res = classifyStatuses(new Map([["00-quota", raw]]));
+    assert.equal(res.slots.get("quota")?.source, "adapted", raw);
+    assert.equal(res.slots.get("quota")?.text, expected, raw);
+    assert.deepEqual(res.unknown, [], raw);
+  }
+
+  const override = classifyStatuses(new Map([
+    ["path-bar:quota", "Cl:5%"],
+    ["00-quota", "\x1b[38;2;217;119;87mClaude:\x1b[0m\x1b[38;2;63;185;80m○\x1b[0m \x1b[38;2;63;185;80m12%\x1b[0m"],
+  ]));
+  assert.equal(override.slots.get("quota")?.source, "segment");
+  assert.equal(override.slots.get("quota")?.text, "Cl:5%");
+  assert.deepEqual(override.unknown, []);
+
+  // Every built-in adapter must expose a unique status key and a valid SEGMENT_ID.
+  const keys = new Set<string>();
+  for (const adapter of ADAPTED_EXTENSIONS) {
+    assert.ok(!keys.has(adapter.key), `duplicate adapter key: ${adapter.key}`);
+    keys.add(adapter.key);
+    assert.match(adapter.id, SEGMENT_ID, `invalid adapter id: ${adapter.id}`);
+  }
 });
 
 test("packRightSlots folds overflow slots into +N badge", () => {

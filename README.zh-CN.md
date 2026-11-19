@@ -50,7 +50,8 @@ pi install git:github.com/johnbitcn/pi-path-bar
 **Minimal mode** 默认开启。它会隐藏底部状态行，并将关键信息以极简格式嵌入输入框的上下横线。在 `/path-bar` 中关闭该开关即可还原为多行底栏（或原生底栏）。
 
 - **上横线左侧：**运行态固定降级为 5 列 spinner（与空闲态对齐，无抖动），其后显示精简 Token 用量、缓存命中率、费用与会话名。重试、上下文压缩、分支摘要等罕见长提示触发时会临时接管此区域。
-- **上横线右侧：**显示主动注册的 `path-bar:*` 扩展槽位（优先级最高）、内置适配的常见扩展（`pi-usage`、`pi-usage-token-status`、`ponytail`、`ssh`、`preset`、`usage`、`debug-provider`）以及可自由排序的本机时间 `clock`。超出宽度时折叠为 `+N`。
+- **上横线右侧：**显示主动注册的 `path-bar:*` 扩展槽位（优先级最高）、内置适配的常见扩展（`pi-usage`、`pi-usage-token-status`、`usage`、`pi-usage-bars`、`provider-usage`、`quota`、`ponytail`、`ssh`、`preset`、`debug-provider`）以及可自由排序的本机时间 `clock`。超出宽度时折叠为 `+N`。
+  - 用量扩展内置适配涵盖 `@kaishin/pi-usage`（`pi-usage`、`pi-usage-token-status`）、`@narumitw/pi-usage`（`usage`）、`@hk_net/pi-usage-bars`（`pi-usage-bars`）、`@sreetej510/pi-usage` / `@subaud-tools/pi-usage`（`provider-usage`）与 `@cad0p/pi-usage`（`quota`）。`@tmustier/pi-usage-extension` 仅提供 `/usage` 弹窗且不调用 `setStatus`，无需适配。
 - **下横线左侧：**显示简短路径（含目录别名）与紧凑 Git 状态。
 - **下横线右侧：**显示缩写模型名、思考等级和上下文占用（默认 `◐42%/200k`，窄屏自动降级为 `◐42%`）。
 - **未知扩展：**既未主动注册也未内置适配的扩展状态，会在下横线下方单独显示一行；无内容时自动隐藏。

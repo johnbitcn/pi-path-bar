@@ -27,7 +27,9 @@ Configured ids that no extension registered are kept in the config, so uninstall
 
 When the row does not fit, the rightmost segment is dropped, then the row is measured again (in Minimal mode, dropped slots fold into a `+N` badge). Order decides priority: a segment moved to the left survives longer.
 
-Users can press `Space` in **Footer order** to hide any `path-bar:<id>` segment, built-in adapted extension (`pi-usage`, `pi-usage-token-status`, `ponytail`, `ssh`, `preset`, `usage`, `debug-provider`), or `clock`, and use `<` / `>` (or `,` / `.`) to move any item including `clock` to any position. Explicit `path-bar:<id>` registrations always take precedence over built-in adapters with the same id and suppress the legacy key so it is not duplicated below the bottom border. Hidden ids are persisted in `hiddenSegments`; in Minimal mode, hidden adapted extensions do not fall back to the unknown-extension row.
+Users can press `Space` in **Footer order** to hide any `path-bar:<id>` segment, built-in adapted extension (`pi-usage`, `pi-usage-token-status`, `usage`, `pi-usage-bars`, `provider-usage`, `quota`, `ponytail`, `ssh`, `preset`, `debug-provider`), or `clock`, and use `<` / `>` (or `,` / `.`) to move any item including `clock` to any position. Explicit `path-bar:<id>` registrations always take precedence over built-in adapters with the same id and suppress the legacy key so it is not duplicated below the bottom border (for example, `path-bar:pi-usage-bars` overrides `@hk_net/pi-usage-bars`, and `path-bar:quota` overrides `00-quota`). Hidden ids are persisted in `hiddenSegments`; in Minimal mode, hidden adapted extensions do not fall back to the unknown-extension row.
+
+Built-in usage adapters cover `@kaishin/pi-usage` (`pi-usage`, `pi-usage-token-status`), `@narumitw/pi-usage` (`usage`), `@hk_net/pi-usage-bars` (`pi-usage-bars`), `@sreetej510/pi-usage` / `@subaud-tools/pi-usage` (`provider-usage`), and `@cad0p/pi-usage` (`quota`). `@tmustier/pi-usage-extension` only opens a `/usage` dialog and does not call `setStatus`, so no adapter is needed.
 
 ## Files
 

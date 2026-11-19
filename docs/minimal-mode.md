@@ -45,7 +45,7 @@ Minimal 模式**默认开启**，可在 `/path-bar` 设置页通过 `Minimal mod
 | 区域 | 定位 | 放置内容 |
 | :--- | :--- | :--- |
 | **上横线 · 左（W + L）** | 瞬时运行态 + 非即时信息 | • W 槽（5 列）：运行 spinner `⠋`（空闲为 `──── `）<br>• L 槽（平时）：精简 Token 用量、缓存命中率、费用/订阅、会话名<br>• L 槽（异常态）：原生重试 / 压缩 / 分支摘要提示临时接管 |
-| **上横线 · 右** | 外围与扩展槽位 | • 类型 2 主动注册扩展（`path-bar:<id>`，优先级高于类型 1）<br>• 类型 1 内置适配扩展（`pi-usage`、`pi-usage-token-status`、`ponytail`、`ssh`、`preset`、`usage`、`debug-provider`）<br>• 本机时间 `clock`（与扩展槽位一样支持自由排序与隐藏）<br>• 宽度不足时按顺序从右侧折叠为 `+N` |
+| **上横线 · 右** | 外围与扩展槽位 | • 类型 2 主动注册扩展（`path-bar:<id>`，优先级高于类型 1）<br>• 类型 1 内置适配扩展（`pi-usage`、`pi-usage-token-status`、`usage`、`pi-usage-bars`、`provider-usage`、`quota`、`ponytail`、`ssh`、`preset`、`debug-provider`）<br>• 本机时间 `clock`（与扩展槽位一样支持自由排序与隐藏）<br>• 宽度不足时按顺序从右侧折叠为 `+N` |
 | **下横线 · 左** | 工作区安全锚点（即时关注） | • 文件夹图标 + 极简路径（含目录别名高亮）<br>• 紧凑 Git 状态（分支、操作态缩写、无空格计数，沿用主题状态色） |
 | **下横线 · 右** | 模型与上下文窗口（即时关注） | • 缩写模型名 + 单字母思考等级（`off` 省略）<br>• 上下文占比仪表符号 + 整数百分比 / 窗口上限（默认 `◐42%/200k`，窄屏降级为 `◐42%`，带 70%/90% 预警色） |
 | **下横线下方一行** | 类型 3 未知扩展（按需显隐） | • 未适配且未主动注册的普通 `setStatus(key, text)`<br>• 无内容时返回 `[]`（0 行，彻底隐藏） |
@@ -87,14 +87,19 @@ Minimal 模式**默认开启**，可在 `/path-bar` 设置页通过 `Minimal mod
 | :--- | :--- | :--- |
 | 本地时钟 `clock` | `14:50`（24h）/ `2:50p`（12h） | 遵循 `config.timeFormat`，支持在 `Footer order` 用 `< / >` 调序或按 `Space` 隐藏 |
 | 类型 2：`path-bar:<id>` | 原样显示（保留颜色） | 扩展主动注册的槽位，优先级高于同名类型 1，并自动抑制对应旧 key 避免重复显示 |
-| 类型 1：`pi-usage` | `5h:82% 7d:65%` / 限流时 `5h:0%!↺2h` / 异常 `u?` | 策略 A：最多保留 2 个最紧迫窗口，保留每窗口风险色，平时省倒计时、限流附单单位倒计时 |
-| 类型 1：`pi-usage-token-status` | `$1.2/$4.6/$12` / 异常 `tok?` | 方案 T2：依次对应 5h/wk/mo 滚动费用，每段保留各自风险色 |
+| 类型 1：`pi-usage` | `5h:82% 7d:65%` / 限流时 `5h:0%!↺2h` / 异常 `u?` | `@kaishin/pi-usage` 策略 A：最多保留 2 个最紧迫窗口，保留每窗口风险色，平时省倒计时、限流附单单位倒计时 |
+| 类型 1：`pi-usage-token-status` | `$1.2/$4.6/$12` / 异常 `tok?` | `@kaishin/pi-usage` 方案 T2：依次对应 5h/wk/mo 滚动费用，每段保留各自风险色 |
+| 类型 1：`usage` | `5h:89% 7d:97%` / `pm:98%` / `¥13/$4.2` / `u?` | `@narumitw/pi-usage`（兼容通用 `usage`）：剥离厂商前缀，支持倒计时/静态窗口/Copilot/积分与多币种余额，`zen` 按已用语义处理，其余按剩余语义处理 |
+| 类型 1：`pi-usage-bars` | `s:48% 7d:75%` / `5h:100%!↺2h 7d:25%` / `$45/$3.2` / `u…` / `u?` | `@hk_net/pi-usage-bars`（key `@hk_net/pi-usage-bars`）：去进度条并按已用语义取最紧迫 2 通道，提取百分比风险色，末尾 `stale` 附加 `~`，支持仅财务模式 |
+| 类型 1：`provider-usage` | `5h:42% 7d:18%` / `$62/$100` / `bg:62% ex:20%` / `u!↺5m` / `u…` / `u?` | `@sreetej510/pi-usage` 与 `@subaud-tools/pi-usage`：支持空格与 `·` 分隔双语法窗口、Anthropic 预算、OpenRouter 花费与积分回退，剥离 `(Xm old)` 缓存标记 |
+| 类型 1：`quota` | `Cx:78% Ag:95%` / `Cl:100%! Cx:8%` / `Cl:! Cx:8%` / `u…` / `u?` | `@cad0p/pi-usage`（key `00-quota`）：按双空格切分多厂商并保留 `Agy C/G`（`AgC`），仅提取状态风险 24-bit 颜色，按策略 A 保留最紧迫 2 项 |
 | 类型 1：`ponytail` | `♘L` / `♘F` / `♘U` / `♞L` / `♞F` / `♞U` / `♘-` | `♘`（U+2658 空心马）表待命/OFF，`♞`（U+265E 实心马）表激活，strict 2 列宽，保留原前缀色 |
 | 类型 1：`ssh` | `ssh:<host>`（≤14 列） | 提取远程主机名，保留原前缀色 |
 | 类型 1：`preset` | `P:<name>`（≤12 列） | 压缩预设名称，保留原前缀色 |
-| 类型 1：`usage` | 去除 `left` 等冗余词（≤14 列） | 例：`5h:100% left` → `5h:100%` |
 | 类型 1：`debug-provider` | `dbg` | 兼容 `debug-provider` 与 `provider-debug` |
 | 类型 3：未知扩展 | 不占上横线，在下横线下方单独 1 行显示 | 无未知扩展时彻底隐藏（0 行） |
+
+> 注：`pi.dev/packages?name=pi-usage` 排名第 2 的 `@tmustier/pi-usage-extension` 仅注册 `/usage` 弹窗命令，不调用 `setStatus` / `setWidget` / `setFooter`，因此无需内置适配器。
 
 - **排序与隐藏**：在 `/path-bar` → `Footer order` 中，`< / >` 调整顺序，`Space` 切换显示/隐藏（覆盖 `clock`、类型 1 和类型 2，持久化于 `hiddenSegments`）。被隐藏的类型 1 扩展不会回流到下横线下方一行。
 - **溢出折叠**：上横线右区装不下全部未隐藏槽位时，按配置顺序从右侧弹出并追加 `+N` 徽标。

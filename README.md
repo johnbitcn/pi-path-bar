@@ -50,7 +50,8 @@ Local time appears at the right of the path line. The home directory is shown as
 **Minimal mode** is enabled by default. It hides the footer rows and moves compact status onto the top and bottom borders of the editor. Turn it off in `/path-bar` to restore the multi-line footer (or Native footer).
 
 - **Top border (left):** fixed 5-column spinner slot while running (zero-jitter alignment with idle), followed by compact token usage, cache hit rate, cost, and session name. Rare long notices (retry, compaction, branch summary) temporarily take over this area.
-- **Top border (right):** registered `path-bar:*` segments (highest priority), built-in adapted extensions (`pi-usage`, `pi-usage-token-status`, `ponytail`, `ssh`, `preset`, `usage`, `debug-provider`), and local time (`clock`, reorderable). Overflowing slots fold into a `+N` badge.
+- **Top border (right):** registered `path-bar:*` segments (highest priority), built-in adapted extensions (`pi-usage`, `pi-usage-token-status`, `usage`, `pi-usage-bars`, `provider-usage`, `quota`, `ponytail`, `ssh`, `preset`, `debug-provider`), and local time (`clock`, reorderable). Overflowing slots fold into a `+N` badge.
+  - Built-in usage adapters cover `@kaishin/pi-usage` (`pi-usage`, `pi-usage-token-status`), `@narumitw/pi-usage` (`usage`), `@hk_net/pi-usage-bars` (`pi-usage-bars`), `@sreetej510/pi-usage` / `@subaud-tools/pi-usage` (`provider-usage`), and `@cad0p/pi-usage` (`quota`). `@tmustier/pi-usage-extension` only opens a `/usage` dialog and does not use `setStatus`, so no adapter is needed.
 - **Bottom border (left):** compact path (with aliases) and Git status.
 - **Bottom border (right):** shortened model name, thinking level, and context usage (`◐42%/200k`, dropping `/200k` on narrow screens).
 - **Unknown extensions:** other extension statuses appear on a single line below the bottom border only when active, and hide automatically when empty.
