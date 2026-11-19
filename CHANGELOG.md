@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0]
+
+- **Minimal mode (enabled by default):** Reclaim vertical space by removing the multi-line footer and placing your path, Git status, usage, model, context, and local time cleanly on the editor's top and bottom borders. Built for small screens and narrow splits, with automatic progressive compacting, `+N` overflow folding, and jitter-free running status. Turn it off anytime in `/path-bar` to use the classic multi-line footer or Pi's native footer.
+- **Reorder and hide items:** Open **Footer order** in `/path-bar` to move right-side items (including the clock and other extensions) or press `Space` to hide what you do not need.
+- **Cleaner extension coexistence:** Popular usage and status extensions stay compact on the top border automatically; other extension messages appear below only while active and hide when empty.
+- **Updated preview and docs:** Refreshed the package preview and READMEs around Minimal mode and Reading mode.
+- **Tip:** Want another extension adapted for `pi-path-bar`? Feel free to [open an issue](https://github.com/johnbitcn/pi-path-bar/issues), or ask your AI assistant to add `pi-path-bar` registration to your extension using the [footer segments guide](https://github.com/johnbitcn/pi-path-bar/blob/main/docs/footer-segments.md).
+
 ## [0.4.2]
 
 - Add a Pi Plugins preview image and the `pi.image` metadata for the package listing.
