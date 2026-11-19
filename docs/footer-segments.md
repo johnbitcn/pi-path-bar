@@ -23,14 +23,17 @@ ctx.ui.setStatus("path-bar:net", undefined); // remove it
 
 Configured ids that no extension registered are kept in the config, so uninstalling an extension does not lose the order.
 
-## Dropping
+## Dropping & hiding
 
-When the row does not fit, the rightmost segment is dropped, then the row is measured again. Order decides priority: a segment moved to the left survives longer.
+When the row does not fit, the rightmost segment is dropped, then the row is measured again (in Minimal mode, dropped slots fold into a `+N` badge). Order decides priority: a segment moved to the left survives longer.
+
+Users can press `Space` in **Footer order** to hide any `path-bar:<id>` segment, built-in adapted extension (`ponytail`, `ssh`, `preset`, `usage`, `debug-provider`), or `clock`. Hidden ids are persisted in `hiddenSegments`. In Minimal mode, hidden adapted extensions do not fall back to the unknown-extension row below the bottom border.
 
 ## Files
 
 | File | Role |
 | --- | --- |
-| `src/segments.ts` | Key grammar, status parsing, `resolveOrder()` |
-| `src/index.ts` | Row rendering in the footer |
-| `src/settings.ts` | Footer order screen |
+| `src/segments.ts` | Key grammar, three-tier status classification, built-in adapters, `resolveOrder()` |
+| `src/minimal.ts` | Minimal border formatters, `+N` slot packing, and `MinimalEditor` |
+| `src/index.ts` | Standard footer, Minimal footer, and editor lifecycle |
+| `src/settings.ts` | Settings menu and Footer order / visibility screen |

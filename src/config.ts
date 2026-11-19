@@ -8,15 +8,18 @@ export type PathMode = "short" | "auto" | "full" | "native";
 export interface FolderAlias { path: string; name: string }
 export interface Config {
   mode: PathMode;
+  minimal: boolean;
   icon: boolean;
   branch: boolean;
   session: boolean;
   timeFormat: "24h" | "12h";
   /** Left-to-right order of the footer segments on the path line; "clock" is the built-in time. */
   segments: string[];
+  /** Hidden segment ids (built-in clock, Type 1 adapted extensions, and Type 2 path-bar:* segments). */
+  hiddenSegments: string[];
   aliases: FolderAlias[];
 }
-export const defaults = (): Config => ({ mode: "short", icon: true, branch: true, session: true, timeFormat: "24h", segments: [], aliases: [] });
+export const defaults = (): Config => ({ mode: "short", minimal: true, icon: true, branch: true, session: true, timeFormat: "24h", segments: [], hiddenSegments: [], aliases: [] });
 
 export function aliasName(value: string): string {
   const name = value.trim();
@@ -56,7 +59,13 @@ export function validateConfig(value: unknown): Config {
     }
     config.segments = [...new Set(data.segments as string[])];
   }
-  for (const key of ["icon", "branch", "session"] as const) {
+  if (data.hiddenSegments !== undefined) {
+    if (!Array.isArray(data.hiddenSegments) || data.hiddenSegments.some((id: unknown) => typeof id !== "string" || !SEGMENT_ID.test(id))) {
+      throw new Error("hiddenSegments must be an array of segment ids, for example [\"clock\", \"ssh\"]");
+    }
+    config.hiddenSegments = [...new Set(data.hiddenSegments as string[])];
+  }
+  for (const key of ["minimal", "icon", "branch", "session"] as const) {
     if (data[key] === undefined) continue;
     if (typeof data[key] !== "boolean") throw new Error(`${key} must be a boolean.`);
     config[key] = data[key];

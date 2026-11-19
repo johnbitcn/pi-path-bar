@@ -18,7 +18,7 @@ test("settings menu adds, edits and deletes an arbitrary folder alias", async (t
   const inputs = [folder, "任意目录", "", "新名称"];
   const selects = ["任意目录 → " + folder, "Edit path or name", "新名称 → " + folder, "Delete alias"];
   const keys = [
-    ["\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\r"], // Add
+    ["\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\r"], // Add
     ["\x1b[B", "\r"], // Manage -> edit
     ["\r"], // Manage -> delete
     ["\x1b"],
@@ -59,7 +59,7 @@ for (const input of ["", "   ", undefined]) {
       ui: {
         custom: (build: any) => new Promise((done) => {
           const component = build({ requestRender() {} }, { fg: (_: string, text: string) => text, bold: (text: string) => text }, {}, done);
-          const keys = menuCount++ === 0 ? ["\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\r"] : ["\x1b"];
+          const keys = menuCount++ === 0 ? ["\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\r"] : ["\x1b"];
           for (const key of keys) component.handleInput(key);
         }),
         input: async (_title: string, placeholder: string) => {
@@ -87,7 +87,7 @@ for (const saveFails of [false, true]) {
         const component = build({ requestRender() {} }, { fg: (_: string, text: string) => text, bold: (text: string) => text }, {}, done);
         const row = () => component.render(100).find((line: string) => line.includes("Time format"));
         assert.ok(row().includes("24h"));
-        for (let i = 0; i < 4; i++) component.handleInput("\x1b[B");
+        for (let i = 0; i < 5; i++) component.handleInput("\x1b[B");
         component.handleInput("\r");
         assert.equal(config.timeFormat, saveFails ? "24h" : "12h");
         assert.ok(row().includes(saveFails ? "24h" : "12h"));

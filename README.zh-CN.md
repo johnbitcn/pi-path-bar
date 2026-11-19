@@ -29,11 +29,12 @@ pi install git:github.com/johnbitcn/pi-path-bar
 | 设置项 | 默认值 | 可选值 |
 | --- | --- | --- |
 | Path display（路径显示） | Short | Short、Auto、Full、Native footer |
+| Minimal mode（极简模式） | On | On、Off |
 | Folder icon（目录图标） | On | On、Off |
 | Git status（Git 状态） | On | On、Off |
 | Session name（会话名称） | On | On、Off |
 | Time format（时间格式） | 24h | 24h、12h（带 AM/PM） |
-| Footer order（底栏片段顺序） | — | 左右移动额外片段 |
+| Footer order（底栏片段顺序与隐藏） | — | 移动顺序或按空格隐藏片段与时钟 |
 | Add folder alias（添加目录别名） | — | 输入文件夹路径和名称 |
 | Manage folder aliases（管理目录别名） | — | 修改或删除别名 |
 
@@ -44,13 +45,23 @@ pi install git:github.com/johnbitcn/pi-path-bar
 
 时间显示在路径行右侧，使用本机时区。主目录显示为 `~`，支持中文目录名。
 
-## 底栏顺序
+## 极简模式（Minimal mode）
 
-其他 Pi 扩展可以在路径行右侧显示额外文字。新片段默认出现在时间左侧。
+**Minimal mode** 默认开启。它会隐藏底部状态行，并将关键信息以极简格式嵌入输入框的上下横线。在 `/path-bar` 中关闭该开关即可还原为多行底栏（或原生底栏）。
 
-在 `/path-bar` 中选择 **Footer order** 调整顺序。`up` / `down` 选择片段，`<` / `>`（或 `,` / `.`）左右移动，`Enter` 或 `Esc` 退出。`clock` 表示本机时间。
+- **上横线左侧：**运行态固定降级为 5 列 spinner（与空闲态对齐，无抖动），其后显示精简 Token 用量、缓存命中率、费用与会话名。重试、上下文压缩、分支摘要等罕见长提示触发时会临时接管此区域。
+- **上横线右侧：**显示主动注册的 `path-bar:*` 扩展槽位、内置适配的常见扩展（`ponytail`、`ssh`、`preset`、`usage`、`debug-provider`）以及本机时间。超出宽度时折叠为 `+N`。
+- **下横线左侧：**显示简短路径（含目录别名）与紧凑 Git 状态。
+- **下横线右侧：**显示缩写模型名、思考等级和上下文占用（默认 `◐42%/200k`，窄屏自动降级为 `◐42%`）。
+- **未知扩展：**既未主动注册也未内置适配的扩展状态，会在下横线下方单独显示一行；无内容时自动隐藏。
 
-把片段移到左侧，可让它在窄屏上保留：终端变窄时从右往左逐个丢弃，最靠近屏幕边缘的片段先消失。顺序保存在配置文件的 `segments` 中，从左到右排列。
+## 底栏顺序与隐藏
+
+其他 Pi 扩展可以在路径行右侧（极简模式下为上横线右侧）显示额外文字。新片段默认出现在时间左侧。
+
+在 `/path-bar` 中选择 **Footer order** 调整顺序和可见性。`up` / `down` 选择项目，`<` / `>`（或 `,` / `.`）左右移动，`Space` 切换显示或隐藏（支持 `clock`、主动注册的 `path-bar:*` 扩展及内置适配扩展），`Enter` 或 `Esc` 退出。
+
+把片段移到左侧，可让它在窄屏上优先保留（极简模式下溢出项会折叠为 `+N`）。顺序保存在配置文件的 `segments` 中，隐藏项保存在 `hiddenSegments` 中。
 
 扩展作者请见[底栏片段](https://github.com/johnbitcn/pi-path-bar/blob/main/docs/footer-segments.md)。
 

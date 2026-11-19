@@ -29,11 +29,12 @@ Run `/path-bar`. Use the arrow keys to select an item, Enter or Space to change 
 | Setting | Default | Choices |
 | --- | --- | --- |
 | Path display | Short | Short, Auto, Full, Native footer |
+| Minimal mode | On | On, Off |
 | Folder icon | On | On, Off |
 | Git status | On | On, Off |
 | Session name | On | On, Off |
 | Time format | 24h | 24h, 12h (AM/PM) |
-| Footer order | — | Move extra segments left or right |
+| Footer order | — | Reorder or hide segments and clock |
 | Add folder alias | — | Enter a folder path and a name |
 | Manage folder aliases | — | Edit or delete aliases |
 
@@ -44,13 +45,23 @@ Run `/path-bar`. Use the arrow keys to select an item, Enter or Space to change 
 
 Local time appears at the right of the path line. The home directory is shown as `~`. Unicode folder names are supported.
 
+## Minimal mode
+
+**Minimal mode** is enabled by default. It hides the footer rows and moves compact status onto the top and bottom borders of the editor. Turn it off in `/path-bar` to restore the multi-line footer (or Native footer).
+
+- **Top border (left):** fixed 5-column spinner slot while running (zero-jitter alignment with idle), followed by compact token usage, cache hit rate, cost, and session name. Rare long notices (retry, compaction, branch summary) temporarily take over this area.
+- **Top border (right):** registered `path-bar:*` segments, built-in adapted extensions (`ponytail`, `ssh`, `preset`, `usage`, `debug-provider`), and local time. Overflowing slots fold into a `+N` badge.
+- **Bottom border (left):** compact path (with aliases) and Git status.
+- **Bottom border (right):** shortened model name, thinking level, and context usage (`◐42%/200k`, dropping `/200k` on narrow screens).
+- **Unknown extensions:** other extension statuses appear on a single line below the bottom border only when active, and hide automatically when empty.
+
 ## Footer order
 
-Other Pi extensions can show extra text at the right of the path line. New segments appear left of the time.
+Other Pi extensions can show extra text at the right of the path line (or top-right border in Minimal mode). New segments appear left of the time.
 
-Choose **Footer order** in `/path-bar` to set the order. Use `up` / `down` to select a segment, `<` / `>` (or `,` / `.`) to move it, and `Enter` or `Esc` to close. `clock` is the local time.
+Choose **Footer order** in `/path-bar` to set order and visibility. Use `up` / `down` to select an item, `<` / `>` (or `,` / `.`) to move it, `Space` to show or hide it (including `clock`, registered `path-bar:*` segments, and built-in adapted extensions), and `Enter` or `Esc` to close.
 
-Move a segment left to keep it visible on narrow terminals: they drop segments from the right, so the segment nearest the edge disappears first. The order is stored in `segments` in the config file, as ids from left to right.
+Move a segment left to keep it visible on narrow terminals: they drop segments from the right (folding into `+N` in Minimal mode). Order is stored in `segments` and hidden items in `hiddenSegments` in the config file.
 
 Extension authors: see [footer segments](https://github.com/johnbitcn/pi-path-bar/blob/main/docs/footer-segments.md).
 

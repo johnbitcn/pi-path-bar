@@ -60,6 +60,11 @@ test("invalid config is not overwritten and missing drives keep their aliases", 
   assert.equal(readFileSync(file, "utf8"), "{invalid");
   assert.throws(() => validateConfig({ mode: "invalid" }));
   assert.throws(() => validateConfig({ icon: "false" }));
+  assert.throws(() => validateConfig({ minimal: "true" }));
+  assert.equal(validateConfig({}).minimal, true);
+  assert.equal(validateConfig({ minimal: false }).minimal, false);
+  assert.deepEqual(validateConfig({ hiddenSegments: ["clock", "ssh", "ssh"] }).hiddenSegments, ["clock", "ssh"]);
+  for (const hiddenSegments of ["clock", ["Bad"], [1], ["a/b"]]) assert.throws(() => validateConfig({ hiddenSegments }));
   assert.equal(validateConfig({}).timeFormat, "24h");
   assert.equal(validateConfig({ timeFormat: "24h" }).timeFormat, "24h");
   for (const timeFormat of ["invalid", 12, null, true]) assert.throws(() => validateConfig({ timeFormat }));

@@ -42,7 +42,9 @@ test("footer preserves statuses, usage and supports restore", async (t) => {
       }),
     },
   };
-  extension(pi, join(dir, "config.json"));
+  const store = new ConfigStore(join(dir, "config.json"));
+  store.update((config) => { config.minimal = false; });
+  extension(pi, store.file);
   await start({}, ctx);
   const component = factory({ requestRender() {} }, { fg: (_color: string, text: string) => text }, {
     onBranchChange: () => () => { disposed = true; },
@@ -70,7 +72,7 @@ for (const timeFormat of ["24h", "12h"] as const) {
     const dir = mkdtempSync(join(tmpdir(), "pi-path-bar-clock-"));
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const store = new ConfigStore(join(dir, "config.json"));
-    store.update((config) => { config.branch = false; config.timeFormat = timeFormat; });
+    store.update((config) => { config.minimal = false; config.branch = false; config.timeFormat = timeFormat; });
     const now = new Date(2026, 0, 1, timeFormat === "24h" ? 23 : 11, 59, 58);
     t.mock.timers.enable({ apis: ["Date", "setInterval"], now });
     const handlers: Record<string, any> = {};

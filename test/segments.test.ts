@@ -44,7 +44,7 @@ test("config validates segment ids and removes duplicates", () => {
 
 async function footer(t: any, segments: string[], statuses: Map<string, string>) {
   const store = new ConfigStore(join(temporary(t), "config.json"));
-  store.update((config) => { config.branch = false; config.session = false; config.segments = segments; });
+  store.update((config) => { config.minimal = false; config.branch = false; config.session = false; config.segments = segments; });
   const handlers: Record<string, any> = {};
   let component: any;
   const ctx: any = {
@@ -97,12 +97,42 @@ test("narrow terminals drop segments from the right", async (t) => {
   assert.match(clockFirst.component.render(9)[0], /\d{2}:\d{2}$/);
 });
 
+test("hiddenSegments hides clock and path-bar segments in standard footer mode", async (t) => {
+  const store = new ConfigStore(join(temporary(t), "config.json"));
+  store.update((config) => { config.minimal = false; config.branch = false; config.session = false; config.hiddenSegments = ["clock", "net"]; });
+  const handlers: Record<string, any> = {};
+  let component: any;
+  const ctx: any = {
+    mode: "tui",
+    getContextUsage: () => undefined,
+    sessionManager: { getCwd: () => "/tmp/project", getSessionName: () => undefined, getEntries: () => [] },
+    ui: {
+      setFooter(factory: any) {
+        component = factory?.({ requestRender() {} }, { fg: (_: string, text: string) => text }, {
+          onBranchChange: () => () => {},
+          getAvailableProviderCount: () => 1,
+          getGitBranch: () => null,
+          getExtensionStatuses: () => new Map([["path-bar:net", "⌁"], ["path-bar:queue", "Q3"]]),
+        });
+      },
+      notify(message: string) { assert.fail(message); },
+    },
+  };
+  extension({ on: (name: string, handler: any) => { handlers[name] = handler; }, registerCommand() {}, getThinkingLevel: () => "medium" } as any, store.file);
+  t.after(() => handlers.session_shutdown());
+  await handlers.session_start({}, ctx);
+  const line = component.render(80)[0];
+  assert.ok(line.endsWith("Q3"));
+  assert.ok(!line.includes("⌁"));
+  assert.doesNotMatch(line, /\d{2}:\d{2}/);
+});
+
 test("Footer order moves segments with < > and , . and ignores key releases", async (t) => {
   const store = new ConfigStore(join(temporary(t), "config.json"));
   let config = store.load();
   const statuses = new Map([["path-bar:net", "⌁"], ["path-bar:queue", "Q3"]]);
   const sequence = [
-    ["\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\r"], // open Footer order
+    ["\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\x1b[B", "\r"], // open Footer order
     ["\x1b[A", "\x1b[A", ">", ",", ">", ">", "\x1b[60;2u", "\x1b[60;2;3u", "\x1b[62;2u", "\x1b"], // move, then close
     ["\x1b"],
   ];
