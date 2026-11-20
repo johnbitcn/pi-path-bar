@@ -40,4 +40,5 @@ jobs:
       - run: npm test
       - run: npm pack --dry-run
       - name: Stage package for manual approval
+        shell: bash
         run: npm stage publish 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"

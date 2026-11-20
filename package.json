@@ -1,6 +1,6 @@
 {
   "name": "pi-path-bar",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A Pi extension for compact paths, folder aliases, and theme-aware Git status",
   "keywords": [
     "footer",

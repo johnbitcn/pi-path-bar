@@ -21,23 +21,25 @@ Do not put passwords, tokens, recovery codes, or one-time codes in the repositor
 
 ## Prepare a release
 
-Start by reviewing the working tree. Choose a new version according to the change. Update the manifest and lockfile without creating a commit or tag:
+Pi displays new `CHANGELOG.md` entries on startup after an update. Follow the README's user-facing style: keep entries brief, in plain English, and limited to what users need to know. Put implementation details in `docs/`.
 
-```sh
-npm version minor --no-git-tag-version
-npm view pi-path-bar versions --json --registry=https://registry.npmjs.org/
-npm ci
-npm run check
-npm test
-npm pack --dry-run
-```
+1. Review the working tree and the changes since the last published version. Propose an exact version, explain why it fits, and show the complete proposed `CHANGELOG.md` entry in the conversation. Wait for the maintainer to confirm both. Do not edit any release version files or `CHANGELOG.md` before that confirmation.
+2. Check the public versions with `npm view pi-path-bar versions --json --registry=https://registry.npmjs.org/`. Also check **Staged Packages** on npm (or use `npm stage list pi-path-bar` from an authenticated maintainer terminal). A staged version reserves the same name/version pair as a published version. If pending status cannot be verified, ask the maintainer to check before staging or retrying.
+3. Run `npm version <version> --no-git-tag-version` using the confirmed version. Add the confirmed `## [<version>]` entry at the top of `CHANGELOG.md`. Keep the manifest, lockfile, and changelog version in sync. Then run:
 
-Use `patch`, `minor`, `major`, or an explicit version as appropriate. Confirm that the exact target version has not already been published. A staged version also occupies its name/version pair; inspect pending versions on npm before retrying a failed or interrupted staging run.
+   ```sh
+   npm ci
+   npm run check
+   npm test
+   npm pack --dry-run
+   ```
 
 Stop if installation, type checking, tests, or package review fails. The package must contain only:
 
 - `package.json`
 - `src/*.ts`
+- `assets/` (preview images)
+- `CHANGELOG.md`
 - `README.md` and `README.zh-CN.md`
 - `LICENSE` and `THIRD_PARTY_NOTICES.md`
 
@@ -45,7 +47,7 @@ It must not contain dependencies, tests, workflows, Git metadata, personal confi
 
 ## Commit, push, and stage
 
-Only after authorization to commit, push, and start the release:
+Only after authorization to commit, push, and start the release. Confirmation of the version and changelog does not grant this authorization.
 
 1. Commit the reviewed changes and version update.
 2. Push the commit to `main`.
@@ -58,10 +60,10 @@ Only after authorization to commit, push, and start the release:
    ```
 
 4. Confirm that the run's commit SHA matches the reviewed commit. The workflow checks the version, runs `npm ci`, type checking, tests, and `npm pack --dry-run`, then runs `npm stage publish`.
-5. Record the commit SHA, version, workflow run URL, and returned stage ID. The staging output is also saved in the run summary.
+5. Require a successful workflow run and a stage ID for the expected version. Record the commit SHA, version, workflow run URL, and stage ID. The staging output is also saved in the run summary.
 6. Stop. Report **staged, waiting for manual approval**, not **published**.
 
-The workflow is manually triggered and only runs on `main`. Do not trigger it repeatedly for the same version if a previous run may already have staged the package. A failed log retrieval is not evidence that staging failed.
+The workflow is manually triggered and only runs on `main`. If the result or stage ID is missing, check the pending version on npm before retrying. A failed log retrieval is not evidence that staging failed.
 
 ## Manual review and approval
 
@@ -73,23 +75,25 @@ npm stage download <stage-id>
 npm stage approve <stage-id>
 ```
 
-Agents and GitHub Actions must not execute approval. If review finds a problem, the maintainer rejects the stage, fixes the problem, and stages again. Never approve just to unblock automation.
+Only the maintainer may approve or reject a staged package. If review finds a problem, reject the stage, fix the problem, and stage again. Never approve just to unblock automation.
 
 ## Verify after approval
 
-Only after the maintainer approves, confirm the public package name and exact version:
+Only after the maintainer approves, confirm the public package name and exact version. For a normal release targeting `latest`, confirm that tag points to the approved version:
 
 ```sh
 npm view pi-path-bar@<version> name version dist.tarball --registry=https://registry.npmjs.org/
+npm view pi-path-bar dist-tags.latest --registry=https://registry.npmjs.org/
 ```
 
-Only then report **published**. Test from a separate directory or an isolated Pi agent directory. Avoid loading both local/Git and npm copies:
+Only then report **published**. Use an isolated Pi agent directory to test the npm package without loading another copy:
 
 ```sh
-pi -e npm:pi-path-bar@<version>
+review_dir="$(mktemp -d)"
+PI_CODING_AGENT_DIR="$review_dir" pi --no-session --no-extensions -e "npm:pi-path-bar@<version>"
 ```
 
-Check compact paths, aliases, Git indicators, both clock formats, idle clock refresh, `/path-bar`, and light/dark themes. Tag the matching release commit only after confirming the public package.
+In fullscreen mode, check `/path-bar`, paths and aliases, Git indicators, both clock formats and idle refresh, and light/dark themes. In Minimal mode, narrow and widen the terminal to check model name truncation and restoration. Enter reading mode and check that `Esc` restores the editor and draft. Tag the matching release commit only after confirming the public package.
 
 Users update managed extensions with:
 

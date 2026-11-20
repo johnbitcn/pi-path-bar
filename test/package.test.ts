@@ -78,5 +78,6 @@ test("release workflow stages with OIDC and never approves or publishes directly
   for (const command of ["npm ci", "npm run check", "npm test", "npm pack --dry-run", "npm stage publish"]) {
     assert.ok(workflow.includes(command), command);
   }
+  assert.match(workflow, /- name: Stage package for manual approval\r?\n\s+shell: bash\r?\n\s+run: npm stage publish\b/);
   assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN|npm publish|npm stage (approve|reject)|environment:/);
 });

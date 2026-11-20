@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.1]
+
+- Adapted for Pi 1.6.0.
+
 ## [0.5.0]
 
 - **Minimal mode (enabled by default):** Reclaim vertical space by removing the multi-line footer and placing your path, Git status, usage, model, context, and local time cleanly on the editor's top and bottom borders. Built for small screens and narrow splits, with automatic progressive compacting, `+N` overflow folding, and jitter-free running status. Turn it off anytime in `/path-bar` to use the classic multi-line footer or Pi's native footer.
