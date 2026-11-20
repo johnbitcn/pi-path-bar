@@ -45,16 +45,15 @@ function tempDir(t: { after: (fn: () => void) => void }) {
 
 test("minimal formatters compress models, thinking, context, cost, time and git cleanly", () => {
   assert.equal(shortModelName("claude-sonnet-4-5-20250929"), "sonnet-4.5");
-  assert.equal(shortModelName("claude-sonnet-4-5-20250929", true), "s4.5");
   assert.equal(shortModelName("claude-3-7-sonnet-20250219"), "sonnet-3.7");
-  assert.equal(shortModelName("claude-opus-4-6", true), "o4.6");
+  assert.equal(shortModelName("claude-opus-4-6"), "opus-4.6");
   assert.equal(shortModelName("gemini-2.5-pro-preview"), "gem-2.5p");
-  assert.equal(shortModelName("gemini-2.5-flash-lite", true), "g2.5fl");
+  assert.equal(shortModelName("gemini-2.5-flash-lite"), "gem-2.5fl");
   assert.equal(shortModelName("gpt-5.2-codex-2026-01-01"), "gpt-5.2c");
   assert.equal(shortModelName("deepseek-reasoner"), "ds-r1");
+  assert.equal(shortModelName("deepseek-v4.1-flash-1017"), "ds-v4.1-flash-1017");
   assert.equal(shortModelName("my-custom-model-20260101"), "my-custom-model");
   assert.equal(shortModelName(undefined), "no-model");
-  assert.equal(shortModelName(undefined, true), "?");
 
   assert.equal(shortThinking("off"), "");
   assert.equal(shortThinking("minimal"), "·m");
@@ -499,6 +498,23 @@ test("bottom border shows context window by default, degrades gracefully on narr
   assert.equal(visibleWidth(narrow), 52);
   assert.ok(narrow.includes("◐42%"));
   assert.ok(!narrow.includes("/200k"));
+
+  for (const suffix of ["astra", "sol"]) {
+    const modelId = `vendor/team/gpt-6.2-${suffix}`;
+    const input = { ...base, modelId };
+    assert.ok(renderMinimalBottomBorder(input, 80, 0).includes(modelId));
+    for (const width of [17, 35, 52]) {
+      const line = renderMinimalBottomBorder(input, width, 0);
+      assert.equal(visibleWidth(line), width);
+      assert.match(line, new RegExp(`…[^ ]*${suffix}(?:·H)? ◐42%`));
+      assert.doesNotMatch(line, /vendor|\/200k/);
+    }
+  }
+  assert.match(renderMinimalBottomBorder({ ...base, modelId: "deepseek-v4.1-flash-1017" }, 17, 0), /…-1017 ◐42%/);
+  const wideCharacters = renderMinimalBottomBorder({ ...base, modelId: "vendor/模型-甲乙" }, 14, 0);
+  assert.equal(visibleWidth(wideCharacters), 14);
+  assert.match(wideCharacters, /…乙 ◐42%/);
+  assert.match(renderMinimalBottomBorder(base, 11, 0), /◐42%/);
 
   // Scroll overlay across CJK characters preserves exact column width.
   const cjkLine = renderMinimalBottomBorder({ ...base, displayPath: "中文超长别名目录/子目录名称测试项目" }, 46, 8);

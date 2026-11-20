@@ -11,7 +11,7 @@ Built for small screens and narrow splits. **pi-path-bar** removes Pi's multi-li
 Enabled by default. On laptops and split panes, a stacked footer wastes vertical space and breaks awkwardly when the terminal gets narrow. Minimal mode fixes both:
 
 - **Zero footer rows:** Everything moves cleanly onto the editor's top and bottom borders, giving your conversation more vertical space.
-- **Smooth on narrow splits:** As the window shrinks, parent folders, Git numbers, model names, and context limits step down automatically, and extra right-side items fold into `+N`. Nothing wraps or jumbles.
+- **Smooth on narrow splits:** The bar shortens paths, Git counts, and context limits as space runs out. It truncates model names from the left to keep the model suffix visible. Extra right-side items fold into `+N`.
 - **Calm, jitter-free status:** Text stays locked in place when Pi starts or finishes running. Rare notices like retries or compaction appear when needed and clear out right after.
 - **Clean with other extensions:** Popular usage and status extensions stay compact on the top border automatically. Any other extension status appears below only while active and hides when empty.
 - **Easy to switch back:** Turn **Minimal mode** off anytime in `/path-bar` to use the classic multi-line footer or Pi's native footer.

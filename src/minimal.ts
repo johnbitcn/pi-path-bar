@@ -85,47 +85,41 @@ export function formatTimeMinimal(date: Date, timeFormat: "24h" | "12h"): string
   return `${h12}:${minutes}${suffix}`;
 }
 
-export function shortModelName(id: string | undefined, compact = false): string {
-  if (!id) return compact ? "?" : "no-model";
+export function shortModelName(id: string | undefined): string {
+  if (!id) return "no-model";
   const stripped = clean(id)
     .replace(/-\d{4}-\d{2}-\d{2}$/, "")
     .replace(/-\d{8}$/, "")
-    .replace(/-\d{4}$/, "")
     .replace(/-(?:latest|preview|instruct|chat)$/i, "");
 
   let match = /^claude-(sonnet|opus|haiku)-(\d+)[.-](\d+)$/i.exec(stripped);
   if (match) {
     const family = match[1].toLowerCase();
-    return compact ? `${family[0]}${match[2]}.${match[3]}` : `${family}-${match[2]}.${match[3]}`;
+    return `${family}-${match[2]}.${match[3]}`;
   }
   match = /^claude-(\d+)[.-](\d+)-(sonnet|opus|haiku)$/i.exec(stripped);
   if (match) {
     const family = match[3].toLowerCase();
-    return compact ? `${family[0]}${match[1]}.${match[2]}` : `${family}-${match[1]}.${match[2]}`;
+    return `${family}-${match[1]}.${match[2]}`;
   }
   match = /^claude-(sonnet|opus|haiku)-(\d+)$/i.exec(stripped);
-  if (match) {
-    const family = match[1].toLowerCase();
-    return compact ? `${family[0]}${match[2]}` : `${family}-${match[2]}`;
-  }
+  if (match) return `${match[1].toLowerCase()}-${match[2]}`;
   match = /^gemini-([\d.]+)-(flash-lite|pro|flash|ultra)(?:-[a-z0-9.]+)?$/i.exec(stripped);
   if (match) {
     const tierMap: Record<string, string> = { "flash-lite": "fl", pro: "p", flash: "f", ultra: "u" };
     const tier = tierMap[match[2].toLowerCase()] ?? match[2][0].toLowerCase();
-    return compact ? `g${match[1]}${tier}` : `gem-${match[1]}${tier}`;
+    return `gem-${match[1]}${tier}`;
   }
   match = /^gpt-([\d.]+)(?:-(codex|mini|nano|turbo))?$/i.exec(stripped);
   if (match) {
     const tierMap: Record<string, string> = { codex: "c", mini: "m", nano: "n", turbo: "t" };
     const tier = match[2] ? tierMap[match[2].toLowerCase()] ?? "" : "";
-    return compact ? `g${match[1]}${tier}` : `gpt-${match[1]}${tier}`;
+    return `gpt-${match[1]}${tier}`;
   }
   if (/^deepseek-reasoner$/i.test(stripped)) return "ds-r1";
-  if (/^deepseek-chat$/i.test(stripped)) return compact ? "ds-c" : "ds-chat";
+  if (/^deepseek-chat$/i.test(stripped)) return "ds-chat";
   match = /^deepseek-(.+)$/i.exec(stripped);
-  if (match) return compact ? truncateToWidth(`ds-${match[1]}`, 8, "…") : `ds-${match[1]}`;
-
-  return compact ? truncateToWidth(stripped, 8, "…") : stripped;
+  return match ? `ds-${match[1]}` : stripped;
 }
 
 export function shortThinking(level: string | undefined): string {
@@ -395,11 +389,17 @@ export function renderMinimalBottomBorder(input: MinimalBottomInput, width: numb
   const thinking = input.reasoning ? shortThinking(input.thinkingLevel) : "";
   const thinkingStyled = thinking ? borderColor(thinking) : "";
 
-  const makeRight = (compactModel: boolean, includeThinking: boolean, includeWindow: boolean): string => {
-    const model = dim(shortModelName(input.modelId, compactModel));
+  const modelName = shortModelName(input.modelId);
+  const makeRight = (includeThinking: boolean, includeWindow: boolean, budget = Infinity, minModelWidth = 0): string => {
     const ctx = formatContextMinimal(input.contextPercent, input.contextWindow, includeWindow, theme);
-    const modelPart = includeThinking && thinkingStyled ? `${model}${thinkingStyled}` : model;
-    return `${modelPart}${dim(" ")}${ctx}`;
+    const level = includeThinking ? thinkingStyled : "";
+    const name = !input.modelId && budget !== Infinity ? "?" : modelName;
+    const nameWidth = visibleWidth(name);
+    const available = budget - visibleWidth(ctx) - visibleWidth(level) - 1;
+    if (minModelWidth && available < Math.min(minModelWidth, nameWidth)) return "";
+    const tail = nameWidth <= available ? name : sliceByColumn(name, nameWidth - available + 1, available - 1, true);
+    if (!tail) return minModelWidth ? "" : ctx;
+    return `${dim(nameWidth <= available ? tail : `…${tail}`)}${level}${dim(" ")}${ctx}`;
   };
 
   const pathStyle: PathOptions["style"] = {
@@ -410,6 +410,7 @@ export function renderMinimalBottomBorder(input: MinimalBottomInput, width: numb
   const leafName = clean(input.displayPath).split("/").filter(Boolean).pop() ?? clean(input.displayPath);
   const minPathWidth = Math.min(Math.max(4, visibleWidth(leafName)), 12);
   const minGap = 2;
+  const maxRightContent = width - minGap - minPathWidth - 8; // four frame columns around each block
 
   const tiers: Array<{
     pathMode: Exclude<Config["mode"], "native">;
@@ -430,19 +431,23 @@ export function renderMinimalBottomBorder(input: MinimalBottomInput, width: numb
   let rightBlock = "";
 
   for (const tier of tiers) {
-    const rightContent = makeRight(tier.compactModel, tier.includeThinking, tier.includeWindow);
-    const rightCandidate = `${borderColor(" ")}${rightContent}${borderColor(" ──")}`;
-    const rightW = visibleWidth(rightCandidate);
-    const leftBudget = width - rightW - minGap - 4; // 4 cols = "── " (3) + trailing " " (1)
-
     const gitRaw = input.showBranch && tier.gitDetail !== "none"
       ? formatGitMinimal(input.gitState, input.fallbackBranch, tier.gitDetail)
       : "";
     const gitStyled = gitRaw ? theme.fg(gitColor(input.gitState), gitRaw) : "";
     const gitW = visibleWidth(gitStyled);
+    const gitSpace = gitW ? gitW + 1 : 0;
+    const rightBudget = tier.compactModel ? maxRightContent - gitSpace : Infinity;
+    let rightContent = makeRight(tier.includeThinking, tier.includeWindow, rightBudget, 6);
+    if (!rightContent && tier.gitDetail === "branch" && gitW > 5) {
+      rightContent = makeRight(tier.includeThinking, tier.includeWindow, maxRightContent - 6, 6);
+    }
+    if (!rightContent) continue;
+    const rightCandidate = `${borderColor(" ")}${rightContent}${borderColor(" ──")}`;
+    const leftBudget = width - visibleWidth(rightCandidate) - minGap - 4;
 
-    if (leftBudget >= minPathWidth + (gitW ? gitW + 1 : 0)) {
-      const pathBudget = leftBudget - (gitW ? gitW + 1 : 0);
+    if (leftBudget >= minPathWidth + gitSpace) {
+      const pathBudget = leftBudget - gitSpace;
       const pathStyled = formatPath(input.displayPath, pathBudget, {
         mode: tier.pathMode,
         icon: input.showIcon,
@@ -477,13 +482,10 @@ export function renderMinimalBottomBorder(input: MinimalBottomInput, width: numb
 
   // Ultra-narrow fallback: guarantee context% survives first, then model, then leaf directory.
   if (!rightBlock) {
-    const compactRight = makeRight(true, false, false);
-    const ctxOnly = formatContextMinimal(input.contextPercent, input.contextWindow, false, theme);
+    const compactRight = makeRight(false, false, width - 6);
     const chosenRightContent = visibleWidth(compactRight) + 6 <= width
       ? compactRight
-      : visibleWidth(ctxOnly) + 6 <= width
-        ? ctxOnly
-        : truncateToWidth(ctxOnly, Math.max(0, width - 4), "");
+      : truncateToWidth(compactRight, width - 4, "");
     rightBlock = chosenRightContent ? `${borderColor(" ")}${chosenRightContent}${borderColor(" ──")}` : "";
     const rightW = visibleWidth(rightBlock);
     const leftBudget = width - rightW - minGap - 4;
