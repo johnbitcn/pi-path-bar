@@ -18,6 +18,8 @@ export interface ExtensionAdapter {
 export interface ClassifiedStatuses {
   /** Type 1 (adapted) and Type 2 (path-bar:*) slots before hidden filtering. */
   slots: Map<string, SlotEntry>;
+  /** Compact billion-context usage for the left telemetry block. */
+  billionContextUsage?: string;
   /** Type 3 (unknown extensions), sorted alphabetically by status key. */
   unknown: Array<[string, string]>;
 }
@@ -659,7 +661,7 @@ export function segmentEntries(statuses: ReadonlyMap<string, string>): Map<strin
 }
 
 /**
- * Split extension statuses into three tiers for Minimal mode:
+ * Extract billion-context telemetry and split the remaining statuses into three tiers:
  * - Type 2: explicit `path-bar:<id>` segments (highest priority; suppresses matching Type 1 key)
  * - Type 1: known third-party statuses compressed by built-in adapters
  * - Type 3: unknown extensions rendered on the auto-hiding line below the bottom border
@@ -681,7 +683,16 @@ export function classifyStatuses(
   }
   const byKey = new Map(adapters.map((adapter) => [adapter.key, adapter]));
   const unknown: Array<[string, string]> = [];
+  let billionContextUsage: string | undefined;
   for (const [key, text] of remaining) {
+    if (key === "billion-context") {
+      // shortcut: matches v0.1.216's display text; use structured usage if upstream exposes it.
+      const usage = /^sub-agents (↑\d+(?:\.\d+)?[kM]?) (↓\d+(?:\.\d+)?[kM]?)(?: \(\$\d+(?:\.\d+)?\))?$/.exec(stripTerminalSequences(text).trim());
+      if (usage) {
+        billionContextUsage = `bc${usage[1]}${usage[2]}`;
+        continue;
+      }
+    }
     const adapter = byKey.get(key);
     if (adapter) {
       // Explicit Type 2 registration wins and suppresses the legacy key so it does not duplicate below.
@@ -695,7 +706,7 @@ export function classifyStatuses(
     unknown.push([key, text]);
   }
   unknown.sort(([a], [b]) => a.localeCompare(b));
-  return { slots, unknown };
+  return { slots, unknown, billionContextUsage };
 }
 
 /**

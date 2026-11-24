@@ -8,7 +8,7 @@ ctx.ui.setStatus("path-bar:net", undefined); // remove it
 ```
 
 - An id uses `a-z`, `0-9`, `.`, `_`, and `-`, starts with a letter or digit, and is 1 to 32 characters long. Uppercase is not accepted.
-- A key without the prefix, or with an invalid id, stays in the status line below the path.
+- Unrecognized keys and invalid ids stay in the status line below the path. In Minimal mode, recognized `billion-context` usage moves to the upper-left telemetry block rather than a segment on the right.
 - The text stays on one line: `\r`, `\n`, and `\t` become spaces.
 - The extension keeps its own colors. Only the separators are dim.
 - Calling `setStatus` with `undefined` removes the segment.

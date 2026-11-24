@@ -622,6 +622,25 @@ test("Minimal mode is enabled by default, hides footer unless Type 3 statuses ex
   assert.ok(workingLines[0].startsWith("── ⠋ ↑5k ↓1k $0.05 ·min-test "));
   assert.equal(workingLines[0].indexOf("↑5k"), lines[0].indexOf("↑5k"));
 
+  const delegateStatus = "sub-agents ↑12k ↓840 ($0.0342)";
+  statuses.set("billion-context", delegateStatus);
+  assert.ok(editor.render(80)[0].startsWith("── ⠋ ↑5k ↓1k · bc↑12k↓840 $0.05 ·min-test "));
+  assert.deepEqual(footerComponent.render(80), []);
+  const medium = editor.render(48)[0];
+  assert.ok(medium.includes("bc↑12k↓840"));
+  assert.ok(!medium.includes("min-test"));
+  const narrow = editor.render(42)[0];
+  assert.ok(narrow.includes("↑5k ↓1k"));
+  assert.ok(!narrow.includes("bc↑"));
+  assert.ok(!narrow.includes("min-test"));
+  assert.deepEqual(footerComponent.render(42), []);
+  statuses.set("billion-context", "sub-agents ↑1.2M ↓0");
+  assert.ok(editor.render(80)[0].includes("bc↑1.2M↓0"));
+  statuses.set("billion-context", "Future usage format");
+  assert.ok(!editor.render(80)[0].includes("bc↑"));
+  assert.deepEqual(footerComponent.render(80), ["Future usage format"]);
+  statuses.delete("billion-context");
+
   // Adding a Type 3 unknown extension status shows exactly 1 line below the bottom border.
   statuses = new Map([...statuses, ["mystery-plugin", "Syncing 2/5"]]);
   assert.deepEqual(footerComponent.render(80), ["Syncing 2/5"]);
@@ -631,10 +650,13 @@ test("Minimal mode is enabled by default, hides footer unless Type 3 statuses ex
   assert.deepEqual(footerComponent.render(80), []);
 
   // Toggling Minimal mode Off via /path-bar restores default editor and standard footer.
+  statuses.set("billion-context", delegateStatus);
   await command.handler("", ctx);
   assert.equal(store.load().minimal, false);
   assert.equal(editorFactory, undefined);
-  assert.equal(footerComponent.render(80).length, 3); // standard 2 lines + status line ("SSH: prod:/app")
+  const standard = footerComponent.render(80);
+  assert.equal(standard.length, 3);
+  assert.ok(standard[2].includes(delegateStatus));
 });
 
 test("Minimal mode overrides native mode while enabled and restores native mode when turned off", async (t) => {
