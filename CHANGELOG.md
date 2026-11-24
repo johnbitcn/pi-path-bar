@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.2]
+
+- In Minimal mode, `billion-context` subagent token usage appears next to session usage on the top border. It no longer repeats below the editor and is hidden when space is tight.
+
 ## [0.5.1]
 
 - Adapted for Pi 1.6.0.
