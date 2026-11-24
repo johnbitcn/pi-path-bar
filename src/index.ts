@@ -135,10 +135,11 @@ export default function (pi: ExtensionAPI, configFile = join(getAgentDir(), "pi-
           const { totals, hitRate } = readStats(current);
           const model = current.model;
           const subscription = Boolean(model && (model.provider === "kimi-coding" || current.modelRegistry?.isUsingOAuth(model)));
-          const { slots } = classifyStatuses(footerData?.getExtensionStatuses() ?? new Map());
+          const { slots, billionContextUsage } = classifyStatuses(footerData?.getExtensionStatuses() ?? new Map());
           return {
             indicator,
             totals,
+            billionContextUsage,
             hitRate,
             subscription,
             sessionName: current.sessionManager.getSessionName(),

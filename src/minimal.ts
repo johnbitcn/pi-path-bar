@@ -26,6 +26,7 @@ export interface MinimalBorderTheme {
 export interface MinimalTopInput {
   indicator?: WorkingIndicatorLike;
   totals: UsageTotals;
+  billionContextUsage?: string;
   hitRate?: number;
   subscription: boolean;
   sessionName?: string;
@@ -321,8 +322,12 @@ export function renderMinimalTopBorder(input: MinimalTopInput, width: number, hi
   const sessionClean = input.showSession && input.sessionName ? clean(input.sessionName).trim() : "";
   const sessionText = sessionClean ? dim(`·${truncateToWidth(sessionClean, 12, "…")}`) : "";
 
+  const delegateText = input.billionContextUsage
+    ? dim(`${tokensText ? "· " : ""}${input.billionContextUsage}`)
+    : "";
   const telemetryTiers = [
-    [tokensText, cacheText, costText, sessionText],
+    [tokensText, delegateText, cacheText, costText, sessionText],
+    ...(delegateText ? [[tokensText, delegateText, cacheText, costText]] : []),
     [tokensText, cacheText, costText],
     [tokensText, costText],
     [costText],
